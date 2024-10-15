@@ -1,0 +1,23 @@
+[package]
+name = "ec-sp"
+authors.workspace = true
+categories.workspace = true
+version.workspace = true
+edition.workspace = true
+keywords.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aarch64-cpu.workspace = true
+cfg-if = "1.0.0"
+
+[features]
+# Default BSP
+default = [ "qemu" ]
+
+# BSP Features
+qemu = [ "uart_hyp" ]
+
+# Drivers
+uart_hyp = []
