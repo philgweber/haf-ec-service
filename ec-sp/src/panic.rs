@@ -1,6 +1,5 @@
 //! A panic handler that infinitely waits.
 
-use crate::println;
 use aarch64_cpu::asm;
 use core::panic::PanicInfo;
 
