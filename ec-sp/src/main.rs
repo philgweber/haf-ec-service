@@ -6,16 +6,13 @@
 #![feature(panic_info_message)]
 
 #[macro_use]
-extern crate cfg_if;
+extern crate ffa;
 
 use core::arch::global_asm;
 
-mod console;
-mod drivers;
 mod error;
 mod exception;
 mod panic;
-mod print;
 
 pub type Result<T> = core::result::Result<T, error::Error>;
 
@@ -37,5 +34,4 @@ pub extern "C" fn sp_main(_sp_params: u64) -> ! {
 
     // We need to finish rest of FFA initialization
     panic!("Stopping in {}", el)
-
 }

@@ -15,6 +15,10 @@ rust-version = "1.76"
 
 [workspace.dependencies]
 aarch64-cpu = "9.4.0"
+ffa = "0.1"
+
+[patch.crates-io]
+ffa = { git = "https://github.com/pop-project/ffa" }
 
 # cargo build/run
 [profile.dev]
