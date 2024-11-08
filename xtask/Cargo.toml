@@ -1,5 +1,6 @@
 [package]
 name = "xtask"
+license = "MIT"
 authors.workspace = true
 categories.workspace = true
 version.workspace = true

@@ -82,7 +82,7 @@ impl Cli {
         let cargo = Cargo {
             action: CargoAction::Clippy,
             release: opts.release,
-            features: &vec![],
+            features: &[],
         };
 
         let cmd = cargo.cmd().context("Failed to run cargo command")?;
@@ -93,7 +93,7 @@ impl Cli {
         let cargo = Cargo {
             action: CargoAction::Format,
             release: false,
-            features: &vec![],
+            features: &[],
         };
 
         let cmd = cargo.cmd().context("Failed to run cargo command")?;
@@ -114,7 +114,7 @@ impl Cli {
         let cargo = Cargo {
             action: CargoAction::Test,
             release: false,
-            features: &vec![],
+            features: &[],
         };
 
         let cmd = cargo.cmd().context("Failed to run cargo command")?;

@@ -24,7 +24,6 @@ impl ExceptionLevel {
             _ => ExceptionLevel::Unknown,
         }
     }
-
 }
 
 impl Display for ExceptionLevel {
