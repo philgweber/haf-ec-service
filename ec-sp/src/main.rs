@@ -38,22 +38,22 @@ global_asm!(
 pub static BOOT_CORE_ID: u64 = 0;
 
 fn ffa_msg_handler(msg: &FfaMsg) -> Result<FfaDirectMsg> {
-    println!("Successfully received ffa msg:");
-    println!("      function_id = {:#08x}", msg.function_id());
-    println!("             uuid = {}", msg.uuid());
+    println!(r#"Successfully received ffa msg:
+        function_id = {:08x}
+               uuid = {}"#, msg.function_id(), msg.uuid());
 
     match msg.uuid() {
         UUID_EC_SVC_MANAGEMENT => {
             let fwmgmt = fw_mgmt::FwMgmt::new();
             fwmgmt.exec(msg)
         }
-        UUID_EC_SVC_POWER => panic!("EC_SVC_POWER not implemented yet"),
-        UUID_EC_SVC_BATTERY => panic!("UUID_EC_SVC_BATTERY not implemented yet"),
-        UUID_EC_SVC_THERMAL => panic!("UUID_EC_SVC_THERMAL not implemented yet"),
-        UUID_EC_SVC_UCSI => panic!("UUID_EC_SVC_UCSI not implemented yet"),
-        UUID_EC_SVC_TIME_ALARM => panic!("UUID_EC_SVC_TIME_ALARM not implemented yet"),
-        UUID_EC_SVC_DEBUG => panic!("UUID_EC_SVC_DEBUG not implemented yet"),
-        UUID_EC_SVC_OEM => panic!("UUID_EC_SVC_OEM not implemented yet"),
+        UUID_EC_SVC_POWER => unimplemented!(),
+        UUID_EC_SVC_BATTERY => unimplemented!(),
+        UUID_EC_SVC_THERMAL => unimplemented!(),
+        UUID_EC_SVC_UCSI => unimplemented!(),
+        UUID_EC_SVC_TIME_ALARM => unimplemented!(),
+        UUID_EC_SVC_DEBUG => unimplemented!(),
+        UUID_EC_SVC_OEM => unimplemented!(),
         _ => panic!("Unknown UUID"),
     }
 }
@@ -70,10 +70,7 @@ pub extern "C" fn sp_main(_sp_params: u64) -> ! {
     // Call the msg_wait method
     match ffa.version() {
         Ok(ver) => println!("FFA Version: {}.{}", ver.major(), ver.minor()),
-        Err(e) => println!(
-            "FFA Version failed: {}",
-            <ffa::FfaError as Into<i64>>::into(e)
-        ),
+        Err(_e) => panic!("FFA Version failed"),
     }
 
     println!("Entering FFA message loop");
