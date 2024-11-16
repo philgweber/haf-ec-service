@@ -38,8 +38,8 @@ impl Cargo<'_> {
             cmd.args([
                 "--features",
                 self.features
-                    .into_iter()
-                    .fold("".to_string(), |acc, feature| acc + "," + &feature)
+                    .iter()
+                    .fold("".to_string(), |acc, feature| acc + "," + feature)
                     .as_str(),
             ]);
         }
@@ -52,8 +52,7 @@ impl Cargo<'_> {
             cmd.args(
                 Package::all()
                     .iter()
-                    .map(|package| package.as_arg())
-                    .flatten()
+                    .flat_map(|package| package.as_arg())
                     .collect::<Vec<_>>(),
             );
         }
