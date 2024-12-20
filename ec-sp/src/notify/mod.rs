@@ -1,0 +1,112 @@
+use ffa::msg::FfaMsg;
+use ffa::FfaError;
+use ffa::FfaFunctionId;
+
+use uuid::Uuid;
+
+pub type Result<T> = core::result::Result<T, ffa::FfaError>;
+
+// Protocol CMD definitions for Notification
+const NFY_QUERY: u8 = 0x0;
+const NFY_SETUP: u8 = 0x1;
+const NFY_DESTROY: u8 = 0x2;
+
+#[derive(Default)]
+struct NfyQueryRsp {
+    _status: i64,
+    _start_id: u16,
+    _last_id: u16,
+}
+
+#[derive(Default)]
+struct _NfySetupReq {
+    _cmd: u8,
+    _uuid: Uuid,
+    _count: u64,
+    _vid: u16,
+    _pid: u16,
+}
+
+#[derive(Default)]
+struct NfyGenericRsp {
+    _status: i64,
+}
+
+#[derive(Default)]
+pub struct Notify {}
+
+impl Notify {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn nfy_query(&self) -> NfyQueryRsp {
+        NfyQueryRsp {
+            _status: 0x0,
+            _start_id: 0x0,
+            _last_id: 0x1,
+        }
+    }
+
+    fn nfy_setup(&self, msg: &FfaMsg) -> NfyGenericRsp {
+        println!("cmd: {}", msg.args64[0]);
+        println!("uuid_lo: 0x{:x}", msg.args64[1]);
+        println!("uuid_hi: 0x{:x}", msg.args64[2]);
+        println!("Count: {}", msg.args64[3]);
+        println!("Mapping1: 0x{:x}", msg.args64[4]);
+        println!("Mapping2: 0x{:x}", msg.args64[5]);
+        NfyGenericRsp {
+            _status: FfaError::Ok.into(),
+        }
+    }
+
+    fn nfy_destroy(&self, _msg: &FfaMsg) -> NfyGenericRsp {
+        NfyGenericRsp { _status: 0x0 }
+    }
+
+    fn ffa_msg_send_direct_req2(&self, msg: &FfaMsg) -> Result<FfaMsg> {
+        let cmd = msg.extract_u8_at_index(0);
+        println!("Received notify command 0x{:x}", cmd);
+
+        // Create new generic rsp packet swap destination and source
+        let mut rsp = FfaMsg {
+            function_id: FfaFunctionId::FfaMsgSendDirectResp2.into(),
+            source_id: msg.destination_id,
+            destination_id: msg.source_id,
+            uuid: msg.uuid,
+            ..Default::default()
+        };
+
+        match cmd {
+            NFY_QUERY => {
+                rsp.struct_to_args64(&self.nfy_query());
+                Ok(rsp)
+            }
+            NFY_SETUP => {
+                rsp.struct_to_args64(&self.nfy_setup(msg));
+                Ok(rsp)
+            }
+            NFY_DESTROY => {
+                rsp.struct_to_args64(&self.nfy_destroy(msg));
+                Ok(rsp)
+            }
+            _ => {
+                println!("Unknown Notify Command: {}", cmd);
+                Err(FfaError::InvalidParameters)
+            }
+        }
+    }
+
+    // Handles messages sent to the EC Firmware management service
+    pub(crate) fn exec(self, msg: &FfaMsg) -> Result<FfaMsg> {
+        let id = FfaFunctionId::from(msg.function_id);
+
+        match id {
+            FfaFunctionId::FfaMsgSendDirectReq2 => self.ffa_msg_send_direct_req2(msg),
+            _ => {
+                println!("Unhandled FfaFunctionId in Notify: {:?}", id);
+                Err(FfaError::InvalidParameters)
+            }
+        }
+    }
+}

@@ -7,17 +7,28 @@ extern crate ffa;
 
 use core::arch::global_asm;
 use ffa::msg::FfaMsg;
+use ffa::rxtx::FfaRxTxMsg;
 use ffa::Ffa;
-use ffa::FfaDirectMsg;
+use ffa::FfaError;
 use uuid::{uuid, Uuid};
 
-mod error;
 mod exception;
 mod fw_mgmt;
+mod notify;
 mod panic;
+mod thermal;
 
-pub type Result<T> = core::result::Result<T, error::Error>;
+pub type Result<T> = core::result::Result<T, ffa::FfaError>;
 
+// Constants used by several modules
+const TX_BUFFER_BASE: u64 = 0x100600A0000;
+const RX_BUFFER_BASE: u64 = 0x100600B0000;
+const RXTX_PAGE_COUNT: u32 = 1;
+const SMEM_BUFFER_BASE: u64 = 0x10060000000;
+const SMEM_RX_BUFFER: u64 = 0x10060000000;
+const SMEM_TX_BUFFER: u64 = 0x10060001000;
+
+const UUID_EC_SVC_NOTIFY: Uuid = uuid!("B510B3A3-59F6-4054-BA7A-FF2EB1EAC765");
 const UUID_EC_SVC_MANAGEMENT: Uuid = uuid!("330c1273-fde5-4757-9819-5b6539037502");
 const UUID_EC_SVC_POWER: Uuid = uuid!("7157addf-2fbe-4c63-ae95-efac16e3b01c");
 const UUID_EC_SVC_BATTERY: Uuid = uuid!("25cb5207-ac36-427d-aaef-3aa78877d27e");
@@ -37,24 +48,37 @@ global_asm!(
 #[link_section = ".text._start_arguments"]
 pub static BOOT_CORE_ID: u64 = 0;
 
-fn ffa_msg_handler(msg: &FfaMsg) -> Result<FfaDirectMsg> {
-    println!(r#"Successfully received ffa msg:
+fn ffa_msg_handler(msg: &FfaMsg) -> Result<FfaMsg> {
+    println!(
+        r#"Successfully received ffa msg:
         function_id = {:08x}
-               uuid = {}"#, msg.function_id(), msg.uuid());
+               uuid = {}"#,
+        msg.function_id, msg.uuid
+    );
 
-    match msg.uuid() {
+    match msg.uuid {
         UUID_EC_SVC_MANAGEMENT => {
             let fwmgmt = fw_mgmt::FwMgmt::new();
             fwmgmt.exec(msg)
         }
+        UUID_EC_SVC_NOTIFY => {
+            let ntfy = notify::Notify::new();
+            ntfy.exec(msg)
+        }
         UUID_EC_SVC_POWER => unimplemented!(),
         UUID_EC_SVC_BATTERY => unimplemented!(),
-        UUID_EC_SVC_THERMAL => unimplemented!(),
+        UUID_EC_SVC_THERMAL => {
+            let thm = thermal::ThmMgmt::new();
+            thm.exec(msg)
+        }
         UUID_EC_SVC_UCSI => unimplemented!(),
         UUID_EC_SVC_TIME_ALARM => unimplemented!(),
         UUID_EC_SVC_DEBUG => unimplemented!(),
         UUID_EC_SVC_OEM => unimplemented!(),
-        _ => panic!("Unknown UUID"),
+        _ => {
+            println!("Unknown UUID {}", msg.uuid);
+            Err(FfaError::InvalidParameters)
+        }
     }
 }
 
@@ -70,7 +94,29 @@ pub extern "C" fn sp_main(_sp_params: u64) -> ! {
     // Call the msg_wait method
     match ffa.version() {
         Ok(ver) => println!("FFA Version: {}.{}", ver.major(), ver.minor()),
-        Err(_e) => panic!("FFA Version failed"),
+        Err(_e) => {
+            // This is fatal, terminate SP
+            println!("FFA Version failed")
+        }
+    }
+
+    // Map in shared RX/TX buffers
+    println!(
+        "Mapping shared RX/TX buffers:
+               TX_BUFFER_BASE: 0x{:x}
+               RX_BUFFER_BASE: 0x{:x}
+               RXTX_PAGE_COUNT: 0x{:x}",
+        TX_BUFFER_BASE, RX_BUFFER_BASE, RXTX_PAGE_COUNT
+    );
+
+    let mut rxtx = FfaRxTxMsg::new();
+    let result = rxtx.map(TX_BUFFER_BASE, RX_BUFFER_BASE, RXTX_PAGE_COUNT);
+    match result {
+        FfaError::Ok => println!("Successfully mapped RXTX buffers"),
+        _ => {
+            // This is fatal, terminate SP
+            println!("Error mapping RXTX buffers")
+        }
     }
 
     println!("Entering FFA message loop");
@@ -84,7 +130,8 @@ pub extern "C" fn sp_main(_sp_params: u64) -> ! {
                 Err(_e) => panic!("Failed to handle FFA msg"),
             },
             Err(_e) => {
-                panic!("Error executing msg_wait");
+                println!("Error executing msg_wait: {:?}", _e);
+                next_msg = ffa.msg_wait();
             }
         }
     }
