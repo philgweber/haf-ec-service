@@ -1,7 +1,25 @@
 # Hafnium EC Service in Rust
+
+## Overview
 This is sample implementation of the EC service which runs under a separate SP partition in Hafnium.
 
 It is written in Rust and has dependencies on FF-A, MU UEFI, Hafnium and TFA
+
+## Feature Status
+The following components are available within this crate.
+```
+xtask       - Wrapper around cargo process for bare metal compilation
+ec-sp       - EC secure partition souce code, memory map and build files
+build.rs    - Creates memory map files from input memory.x
+memory.x    - Memory map for linking output binaries
+start.s     - Initial entry point in assembly jumps to sp_main
+exception.s - Exception handling code
+main.rs     - Main entry point for SP
+panic.rs    - Panic handling code for RUST panic
+fw_mgmt     - Implements the EC firmware management service
+notify      - Implements the EC notification service
+thermal     - Implements the EC thermal service
+```
 
 ## Customizations
 Update memory.x to match the memory map from your dts file
@@ -22,7 +40,8 @@ MEMORY
 ## Build Instructions
 `cargo xtask build`
 
-## Testing for Submission
+## Build Validation
+Before submission the following commands should all be validated to make sure there files are correctly formatted any only valid crates and features are used.
 ```
 cargo +nightly fmt
 cargo +nightly clippy
