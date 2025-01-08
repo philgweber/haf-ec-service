@@ -8,7 +8,7 @@ It is written in Rust and has dependencies on FF-A, MU UEFI, Hafnium and TFA
 ## Feature Status
 The following components are available within this crate.
 ```
-xtask       - Wraper around cargo process for bare metal compilation
+xtask       - Wrapper around cargo process for bare metal compilation
 ec-sp       - EC secure partition souce code, memory map and build files
 build.rs    - Creates memory map files from input memory.x
 memory.x    - Memory map for linking output binaries
