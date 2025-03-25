@@ -1,42 +1,23 @@
-[workspace]
-resolver = "2"
-members = [ "ec-sp",
-	"xtask"
-]
-
-[workspace.package]
-authors = [ "Felipe Balbi <febalbi@microsoft.com>" ]
+[package]
+name = "haf_ec_service"
 categories = [ "embedded", "no-std" ]
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "Provides standard EC services to OS"
+readme = "README.md"
 keywords = [ "embedded", "no-std", "boot", "firmware" ]
 repository = "https://github.com/OpenDevicePartnership/haf_ec_service"
 rust-version = "1.81"
 
-[workspace.dependencies]
+[package.metadata.docs.rs]
+targets = [
+    "aarch64-unknown-none",
+    "aarch64-unknown-none-softfloat",
+]
+
+[dependencies]
 aarch64-cpu = "9.4.0"
-ffa = "0.1"
+ffa = { git = "https://github.com/OpenDevicePartnership/ffa", rev = "1f6ef264"}
+uuid = { version = "1.0", default-features = false, features = ["v1"] }
 
-[patch.crates-io]
-ffa = { git = "https://github.com/OpenDevicePartnership/ffa" }
-
-# cargo build/run
-[profile.dev]
-codegen-units = 1
-debug = 2
-debug-assertions = true
-incremental = false
-opt-level = 3
-overflow-checks = true
-panic = "abort"
-
-# cargo build/run --release
-[profile.release]
-codegen-units = 1
-debug = 2
-debug-assertions = false
-incremental = false
-lto = 'fat'
-opt-level = 3
-overflow-checks = false
-panic = "abort"

@@ -1,7 +1,7 @@
-use core::ptr;
 use ffa::indirect::FfaIndirectMsg;
 use ffa::memory::FfaMemory;
 use ffa::msg::FfaMsg;
+#[cfg(debug_assertions)]
 use ffa::notify::FfaNotify;
 use ffa::FfaError;
 use ffa::FfaFunctionId;
@@ -13,6 +13,7 @@ const EC_CAP_INDIRECT_MSG: u8 = 0x0;
 const EC_CAP_GET_FW_STATE: u8 = 0x1;
 const EC_CAP_GET_SVC_LIST: u8 = 0x2;
 const EC_CAP_GET_BID: u8 = 0x3;
+#[cfg(debug_assertions)]
 const EC_CAP_TEST_NFY: u8 = 0x4;
 const EC_CAP_MAP_SHARE: u8 = 0x5;
 
@@ -82,40 +83,19 @@ impl FwMgmt {
         }
     }
 
-    unsafe fn read_memory(&self, address: u64) -> u64 {
-        ptr::read_volatile(address as *const u64)
-    }
-
-    unsafe fn write_memory(&self, address: u64, value: u64) {
-        ptr::write_volatile(address as *mut u64, value)
-    }
-
     fn map_share(&self, address: u64, length: u64) -> GenericRsp {
         let mut _sts = FfaError::Ok.into();
 
-        // Make sure the address passed in points to our TX_BUFFER_BASE
-        if address == super::TX_BUFFER_BASE {
-            let mut ffamem = FfaMemory::new();
-            ffamem.set_rxtx_buffers(super::RX_BUFFER_BASE, super::TX_BUFFER_BASE);
-            let result = ffamem.retrieve_req(address, length);
+        let mut ffamem = FfaMemory::new();
+        let result = ffamem.retrieve_req(address, length);
 
-            match result {
-                Ok(_params) => {
-                    _sts = FfaError::Ok.into();
-                }
-                Err(e) => {
-                    _sts = e.into();
-                }
+        match result {
+            Ok(_params) => {
+                _sts = FfaError::Ok.into();
             }
-            let msg = FfaIndirectMsg::new();
-            unsafe {
-                msg.init_indirect_msg(super::SMEM_TX_BUFFER, 0x1000);
-                let value = self.read_memory(super::SMEM_BUFFER_BASE);
-                println!("Value from SHARE_MEM_BUFFER: 0x{:08x}", value);
-            };
-        } else {
-            println!("Memory share request passed invalid location");
-            _sts = FfaError::InvalidParameters.into();
+            Err(e) => {
+                _sts = e.into();
+            }
         }
 
         GenericRsp { _status: _sts }
@@ -123,16 +103,6 @@ impl FwMgmt {
 
     #[cfg(debug_assertions)]
     fn test_notify(&self, msg: &FfaMsg) -> GenericRsp {
-        // Trigger Notification Event for testing
-        unsafe {
-            self.write_memory(super::SMEM_BUFFER_BASE, 0x12345678);
-            println!(
-                "SMEM_BUFFER_BASE at 0x{:08x} value: 0x{:08x}",
-                super::SMEM_BUFFER_BASE,
-                self.read_memory(super::SMEM_BUFFER_BASE)
-            );
-        }
-
         let nfy = FfaNotify {
             function_id: FfaFunctionId::FfaNotificationSet.into(),
             source_id: msg.destination_id,
@@ -148,14 +118,14 @@ impl FwMgmt {
         GenericRsp { _status: 0x0 }
     }
 
-    fn process_indirect(&self, seq_num: u16) -> GenericRsp {
+    fn process_indirect(&self, seq_num: u16, rx_buffer: u64, tx_buffer: u64) -> GenericRsp {
         println!("Processing indirect message: 0x{:x}", seq_num);
         let msg = FfaIndirectMsg::new();
         let mut in_buf: [u8; 256] = [0; 256];
         let mut status;
 
         unsafe {
-            status = msg.read_indirect_msg(super::SMEM_RX_BUFFER, seq_num, &mut in_buf);
+            status = msg.read_indirect_msg(rx_buffer, seq_num, &mut in_buf);
         };
 
         if status == FfaError::Ok {
@@ -167,7 +137,7 @@ impl FwMgmt {
             0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
         ];
         unsafe {
-            status = msg.write_indirect_msg(super::SMEM_TX_BUFFER, seq_num, &buf);
+            status = msg.write_indirect_msg(tx_buffer, seq_num, &buf);
         };
 
         GenericRsp {
@@ -189,7 +159,11 @@ impl FwMgmt {
         };
         match cmd {
             EC_CAP_INDIRECT_MSG => {
-                rsp.struct_to_args64(&self.process_indirect((msg.args64[0] >> 8) as u16));
+                rsp.struct_to_args64(&self.process_indirect(
+                    (msg.args64[0] >> 8) as u16,
+                    msg.args64[4],
+                    msg.args64[5],
+                ));
                 Ok(rsp)
             }
             EC_CAP_GET_FW_STATE => {
