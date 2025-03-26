@@ -140,9 +140,7 @@ impl FwMgmt {
             status = msg.write_indirect_msg(tx_buffer, seq_num, &buf);
         };
 
-        GenericRsp {
-            _status: status.into(),
-        }
+        GenericRsp { _status: status.into() }
     }
 
     fn ffa_msg_send_direct_req2(&self, msg: &FfaMsg) -> Result<FfaMsg> {
@@ -159,11 +157,7 @@ impl FwMgmt {
         };
         match cmd {
             EC_CAP_INDIRECT_MSG => {
-                rsp.struct_to_args64(&self.process_indirect(
-                    (msg.args64[0] >> 8) as u16,
-                    msg.args64[4],
-                    msg.args64[5],
-                ));
+                rsp.struct_to_args64(&self.process_indirect((msg.args64[0] >> 8) as u16, msg.args64[4], msg.args64[5]));
                 Ok(rsp)
             }
             EC_CAP_GET_FW_STATE => {

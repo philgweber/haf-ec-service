@@ -1,23 +1,18 @@
-[package]
-name = "haf_ec_service"
-categories = [ "embedded", "no-std" ]
+[workspace]
+resolver = "2"
+members = ["ec-service-lib", "platform/*"]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
-description = "Provides standard EC services to OS"
-readme = "README.md"
-keywords = [ "embedded", "no-std", "boot", "firmware" ]
-repository = "https://github.com/OpenDevicePartnership/haf_ec_service"
-rust-version = "1.81"
 
-[package.metadata.docs.rs]
-targets = [
-    "aarch64-unknown-none",
-    "aarch64-unknown-none-softfloat",
-]
-
-[dependencies]
-aarch64-cpu = "9.4.0"
-ffa = { git = "https://github.com/OpenDevicePartnership/ffa", rev = "1f6ef264"}
+[workspace.dependencies]
+ffa = { git = "https://github.com/OpenDevicePartnership/ffa", rev = "1f6ef264" }
+haf_ec_service = { path = "ec-service-lib" }
+aarch64-rt = { version = "0.1.0", default-features = false, features = [
+    "el1",
+    "exceptions",
+] }
+aarch64-paging = { version = "0.8.1", default-features = false }
+aarch64-cpu = "10.0.0"
 uuid = { version = "1.0", default-features = false, features = ["v1"] }
-

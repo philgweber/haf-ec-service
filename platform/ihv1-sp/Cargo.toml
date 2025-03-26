@@ -9,9 +9,18 @@ repository = "https://github.com/"
 keywords = ["arm", "aarch64", "cortex-a", "osdev"]
 categories = ["embedded", "no-std"]
 
+[features]
+default = []
+baremetal = ["aarch64-rt", "aarch64-paging", "aarch64-cpu"]
+
+[target.'cfg(target_os = "none")'.dependencies]
+aarch64-rt.workspace = true
+aarch64-paging.workspace = true
+aarch64-cpu.workspace = true
+
 [dependencies]
-aarch64-rt = { version = "0.1.0", default-features = false, features = ["el1", "exceptions"] }
-aarch64-paging = { version = "0.8.1", default-features = false }
-aarch64-cpu = "10.0.0"
-ffa = { git = "https://github.com/OpenDevicePartnership/ffa" }
-haf_ec_service = { path = "../.." }
+ffa.workspace = true
+haf_ec_service.workspace = true
+aarch64-rt = { workspace = true, optional = true }
+aarch64-paging = { workspace = true, optional = true }
+aarch64-cpu = { workspace = true, optional = true }

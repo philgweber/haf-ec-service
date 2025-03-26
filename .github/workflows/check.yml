@@ -50,6 +50,26 @@ jobs:
     outputs:
       commits: ${{ toJSON(steps.*.outputs.*) }}
 
+  test:
+    runs-on: ubuntu-latest
+    name: stable / test
+    needs: commit_list
+    strategy:
+      fail-fast: false
+      matrix:
+        commit: ${{ fromJSON(needs.commit_list.outputs.commits) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ matrix.commit }}
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: cargo test
+        run: cargo test
+
   fmt:
     runs-on: ubuntu-latest
     name: stable / fmt
@@ -139,8 +159,10 @@ jobs:
           ref: ${{ matrix.commit }}
       - name: Install nightly
         uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: aarch64-unknown-none
       - name: cargo doc
-        run: cargo doc --no-deps --all-features
+        run: cargo doc --no-deps --all-features --target=aarch64-unknown-none
         env:
           RUSTDOCFLAGS: --cfg docsrs
 
@@ -161,13 +183,16 @@ jobs:
           ref: ${{ matrix.commit }}
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-none
       - name: cargo install cargo-hack
         uses: taiki-e/install-action@cargo-hack
       # intentionally no target specifier; see https://github.com/jonhoo/rust-ci-conf/pull/4
       # --feature-powerset runs for every combination of features
-      - name: cargo hack
-        run: cargo hack --feature-powerset check
-
+      - name: cargo hack (host platform target)
+        run: cargo hack check --feature-powerset --skip baremetal
+      - name: cargo hack (baremetal platform target)
+        run: cargo hack check --feature-powerset --target=aarch64-unknown-none
   deny:
     # cargo-deny checks licenses, advisories, sources, and bans for
     # our dependencies.
@@ -191,7 +216,7 @@ jobs:
           log-level: warn
           manifest-path: ./Cargo.toml
           command: check
-          arguments: --all-features
+          arguments: --all-features --target=aarch64-unknown-none
 
   msrv:
     # check that we can build using the minimal rust version that is specified by this crate
@@ -203,14 +228,7 @@ jobs:
       fail-fast: false
       matrix:
         commit: ${{ fromJSON(needs.commit_list.outputs.commits) }}
-        msrv: ["1.75"] # We're relying on namespaced-features, which
-                       # was released in 1.60
-                       #
-                       # We also depend on `fixed' which requires rust
-                       # 1.71
-                       #
-                       # Additionally, we depend on embedded-hal-async
-                       # which requires 1.75
+        msrv: ["1.85"] # minimum to build the aarch64-rt crate
     name: ubuntu / ${{ matrix.msrv }} (${{ matrix.commit }})
     steps:
       - uses: actions/checkout@v4
@@ -221,5 +239,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.msrv }}
+          targets: aarch64-unknown-none
       - name: cargo +${{ matrix.msrv }} check
-        run: cargo check
+        run: cargo check --all-features --target=aarch64-unknown-none
