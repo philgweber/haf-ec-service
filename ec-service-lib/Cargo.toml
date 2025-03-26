@@ -1,0 +1,20 @@
+[package]
+name = "haf_ec_service"
+categories = ["embedded", "no-std"]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Provides standard EC services to OS"
+readme = "README.md"
+keywords = ["embedded", "no-std", "boot", "firmware"]
+repository = "https://github.com/OpenDevicePartnership/haf_ec_service"
+
+[package.metadata.docs.rs]
+targets = ["aarch64-unknown-none", "aarch64-unknown-none-softfloat"]
+
+[dependencies]
+uuid.workspace = true
+ffa.workspace = true
+
+[target.'cfg(target_os = "none")'.dependencies]
+aarch64-cpu.workspace = true

@@ -3,9 +3,11 @@
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
 fn main() {
-    println!("cargo:rustc-link-arg=-Timage.ld");
-    println!("cargo:rustc-link-arg=-Tlinker/ihv1.ld");
-    println!("cargo:rerun-if-changed=linker/ihv1.ld");
-    println!("cargo:rerun-if-changed=linker/image.ld");
-    println!("cargo:rerun-if-changed=src/main.rs");
+    if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "none" {
+        println!("cargo:rustc-cfg=feature=\"baremetal\"");
+        println!("cargo:rustc-link-arg=-Timage.ld");
+        println!("cargo:rustc-link-arg=-Tplatform/ihv1-sp/linker/ihv1.ld");
+        println!("cargo:rerun-if-changed=platform/ihv1-sp/linker/ihv1.ld");
+        println!("cargo:rerun-if-changed=linker/image.ld");
+    }
 }

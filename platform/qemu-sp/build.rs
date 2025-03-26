@@ -3,9 +3,11 @@
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
 fn main() {
-    println!("cargo:rustc-link-arg=-Timage.ld");
-    println!("cargo:rustc-link-arg=-Tlinker/qemu.ld");
-    println!("cargo:rerun-if-changed=linker/qemu.ld");
-    println!("cargo:rerun-if-changed=linker/image.ld");
-    println!("cargo:rerun-if-changed=src/main.rs");
+    if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "none" {
+        println!("cargo:rustc-cfg=feature=\"baremetal\"");
+        println!("cargo:rustc-link-arg=-Timage.ld");
+        println!("cargo:rustc-link-arg=-Tplatform/qemu-sp/linker/qemu.ld");
+        println!("cargo:rerun-if-changed=platform/qemu-sp/linker/qemu.ld");
+        println!("cargo:rerun-if-changed=linker/image.ld");
+    }
 }
