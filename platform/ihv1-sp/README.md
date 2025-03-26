@@ -1,6 +1,6 @@
 # IHV Embedded Controller Secure Partition
 
-An example secure partition reference for independet hardware vendor that uses haf-ec-service.
+An example secure partition reference for independent hardware vendors.
 
 - `aarch64-paging` for page table management.
 - `aarch64-rt` for the entry point and exception handling.
@@ -8,6 +8,6 @@ An example secure partition reference for independet hardware vendor that uses h
 ## Building
 
 ```
-cargo build
+cargo build --target=aarch64-unknown-none
 cargo objcopy -- -O binary target/aarch64-unknown-none/debug/ihv1-ec-sp.bin
 ```

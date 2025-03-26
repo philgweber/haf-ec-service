@@ -6,10 +6,10 @@ extern crate ffa;
 
 use ffa::msg::FfaMsg;
 use ffa::rxtx::FfaRxTxMsg;
-use ffa::Ffa;
-use ffa::FfaError;
+use ffa::{Ffa, FfaError};
 use uuid::{uuid, Uuid};
 
+mod battery;
 mod fw_mgmt;
 mod notify;
 mod thermal;
@@ -87,7 +87,10 @@ impl HafEcService {
                 ntfy.exec(msg)
             }
             UUID_EC_SVC_POWER => unimplemented!(),
-            UUID_EC_SVC_BATTERY => unimplemented!(),
+            UUID_EC_SVC_BATTERY => {
+                let bat = battery::Battery::new();
+                bat.exec(msg)
+            }
             UUID_EC_SVC_THERMAL => {
                 let thm = thermal::ThmMgmt::new();
                 thm.exec(msg)

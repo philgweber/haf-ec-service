@@ -1,9 +1,7 @@
 use ffa::msg::FfaMsg;
 use ffa::yld::FfaYield;
-use ffa::FfaError;
-use ffa::FfaFunctionId;
-use uuid::Builder;
-use uuid::Uuid;
+use ffa::{FfaError, FfaFunctionId};
+use uuid::{Builder, Uuid};
 
 pub type Result<T> = core::result::Result<T, ffa::FfaError>;
 

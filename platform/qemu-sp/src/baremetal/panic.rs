@@ -1,8 +1,9 @@
 //! A panic handler that infinitely waits.
 extern crate ffa; // Remove this after moving to logger
 
-use aarch64_cpu::asm;
 use core::panic::PanicInfo;
+
+use aarch64_cpu::asm;
 use ffa::println;
 
 /// Stop immediately if called a second time.

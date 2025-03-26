@@ -3,8 +3,7 @@ use ffa::memory::FfaMemory;
 use ffa::msg::FfaMsg;
 #[cfg(debug_assertions)]
 use ffa::notify::FfaNotify;
-use ffa::FfaError;
-use ffa::FfaFunctionId;
+use ffa::{FfaError, FfaFunctionId};
 
 pub type Result<T> = core::result::Result<T, ffa::FfaError>;
 
