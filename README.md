@@ -47,4 +47,5 @@ cargo +nightly fmt
 cargo +nightly clippy
 cargo hack --feature-powerset check
 cargo deny check
+cargo test
 ```
