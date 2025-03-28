@@ -1,7 +1,5 @@
 use ffa::msg::FfaMsg;
-use ffa::FfaError;
-use ffa::FfaFunctionId;
-
+use ffa::{FfaError, FfaFunctionId};
 use uuid::Uuid;
 
 pub type Result<T> = core::result::Result<T, ffa::FfaError>;
