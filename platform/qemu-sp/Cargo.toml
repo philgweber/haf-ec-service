@@ -20,7 +20,7 @@ aarch64-cpu.workspace = true
 
 [dependencies]
 ffa.workspace = true
-haf_ec_service.workspace = true
+ec-service-lib.workspace = true
 aarch64-rt = { workspace = true, optional = true }
 aarch64-paging = { workspace = true, optional = true }
 aarch64-cpu = { workspace = true, optional = true }
