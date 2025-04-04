@@ -8,7 +8,7 @@ edition = "2021"
 
 [workspace.dependencies]
 ffa = { git = "https://github.com/OpenDevicePartnership/ffa", rev = "1f6ef264" }
-haf_ec_service = { path = "ec-service-lib" }
+ec-service-lib = { path = "ec-service-lib" }
 aarch64-rt = { version = "0.1.0", default-features = false, features = [
     "el1",
     "exceptions",

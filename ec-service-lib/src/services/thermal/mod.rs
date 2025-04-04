@@ -3,9 +3,10 @@ use ffa::yld::FfaYield;
 use ffa::{FfaError, FfaFunctionId};
 use uuid::{Builder, Uuid};
 
-pub type Result<T> = core::result::Result<T, ffa::FfaError>;
+use crate::service::{Result, Service};
+use crate::uuid;
 
-// Protocol CMD definitions for ThmMgmt
+// Protocol CMD definitions for Thermal
 const EC_THM_GET_TMP: u8 = 0x1;
 const EC_THM_SET_THRS: u8 = 0x2;
 const EC_THM_GET_THRS: u8 = 0x3;
@@ -94,9 +95,9 @@ impl From<&FfaMsg> for SetVarReq {
 }
 
 #[derive(Default)]
-pub struct ThmMgmt {}
+pub struct Thermal {}
 
-impl ThmMgmt {
+impl Thermal {
     pub fn new() -> Self {
         Self::default()
     }
@@ -171,10 +172,22 @@ impl ThmMgmt {
 
         GenericRsp { _status: 0x0 }
     }
+}
 
-    fn ffa_msg_send_direct_req2(&self, msg: &FfaMsg) -> Result<FfaMsg> {
+const UUID: Uuid = uuid!("31f56da7-593c-4d72-a4b3-8fc7171ac073");
+
+impl Service for Thermal {
+    fn service_name(&self) -> &'static str {
+        "Thermal"
+    }
+
+    fn service_uuid(&self) -> &'static Uuid {
+        &UUID
+    }
+
+    fn ffa_msg_send_direct_req2(&mut self, msg: &FfaMsg) -> Result<FfaMsg> {
         let cmd = msg.extract_u8_at_index(0);
-        println!("Received ThmMgmt command 0x{:x}", cmd);
+        println!("Received Thermal command 0x{:x}", cmd);
 
         // Create new generic rsp packet swap destination and source
         let mut rsp = FfaMsg {
@@ -212,19 +225,6 @@ impl ThmMgmt {
             }
             _ => {
                 println!("Unknown Thermal Command: {}", cmd);
-                Err(FfaError::InvalidParameters)
-            }
-        }
-    }
-
-    // Handles messages sent to the EC Firmware management service
-    pub(crate) fn exec(self, msg: &FfaMsg) -> Result<FfaMsg> {
-        let id = FfaFunctionId::from(msg.function_id);
-
-        match id {
-            FfaFunctionId::FfaMsgSendDirectReq2 => self.ffa_msg_send_direct_req2(msg),
-            _ => {
-                println!("Unhandled FfaFunctionId in Thermal: {:?}", id);
                 Err(FfaError::InvalidParameters)
             }
         }

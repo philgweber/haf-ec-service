@@ -1,5 +1,5 @@
 [package]
-name = "haf_ec_service"
+name = "ec-service-lib"
 categories = ["embedded", "no-std"]
 version = "0.1.0"
 edition = "2021"

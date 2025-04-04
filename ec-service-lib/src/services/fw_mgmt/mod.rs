@@ -1,11 +1,11 @@
+use crate::{Result, Service};
 use ffa::indirect::FfaIndirectMsg;
 use ffa::memory::FfaMemory;
 use ffa::msg::FfaMsg;
 #[cfg(debug_assertions)]
 use ffa::notify::FfaNotify;
 use ffa::{FfaError, FfaFunctionId};
-
-pub type Result<T> = core::result::Result<T, ffa::FfaError>;
+use uuid::{uuid, Uuid};
 
 // Protocol CMD definitions for FwMgmt
 const EC_CAP_INDIRECT_MSG: u8 = 0x0;
@@ -141,8 +141,20 @@ impl FwMgmt {
 
         GenericRsp { _status: status.into() }
     }
+}
 
-    fn ffa_msg_send_direct_req2(&self, msg: &FfaMsg) -> Result<FfaMsg> {
+const UUID: Uuid = uuid!("330c1273-fde5-4757-9819-5b6539037502");
+
+impl Service for FwMgmt {
+    fn service_name(&self) -> &'static str {
+        "FwMgmt"
+    }
+
+    fn service_uuid(&self) -> &'static Uuid {
+        &UUID
+    }
+
+    fn ffa_msg_send_direct_req2(&mut self, msg: &FfaMsg) -> Result<FfaMsg> {
         let cmd = msg.extract_u8_at_index(0);
         println!("Received FwMgmt command 0x{:x}", cmd);
 
@@ -183,19 +195,6 @@ impl FwMgmt {
             }
             _ => {
                 println!("Unknown FwMgmt Command: {}", cmd);
-                Err(FfaError::InvalidParameters)
-            }
-        }
-    }
-
-    // Handles messages sent to the EC Firmware management service
-    pub(crate) fn exec(self, msg: &FfaMsg) -> Result<FfaMsg> {
-        let id = FfaFunctionId::from(msg.function_id);
-
-        match id {
-            FfaFunctionId::FfaMsgSendDirectReq2 => self.ffa_msg_send_direct_req2(msg),
-            _ => {
-                println!("Unhandled FfaFunctionId in FwMgmt: {:?}", id);
                 Err(FfaError::InvalidParameters)
             }
         }

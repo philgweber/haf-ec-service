@@ -1,7 +1,7 @@
+use crate::{Result, Service};
 use ffa::msg::FfaMsg;
-use ffa::{FfaError, FfaFunctionId};
-
-pub type Result<T> = core::result::Result<T, ffa::FfaError>;
+use ffa::FfaFunctionId;
+use uuid::{uuid, Uuid};
 
 #[derive(Default)]
 struct GenericRsp {
@@ -15,8 +15,20 @@ impl Battery {
     pub fn new() -> Self {
         Self::default()
     }
+}
 
-    fn ffa_msg_send_direct_req2(&self, msg: &FfaMsg) -> Result<FfaMsg> {
+const UUID: Uuid = uuid!("25cb5207-ac36-427d-aaef-3aa78877d27e");
+
+impl Service for Battery {
+    fn service_name(&self) -> &'static str {
+        "Battery"
+    }
+
+    fn service_uuid(&self) -> &'static Uuid {
+        &UUID
+    }
+
+    fn ffa_msg_send_direct_req2(&mut self, msg: &FfaMsg) -> Result<FfaMsg> {
         let cmd = msg.extract_u8_at_index(0);
         println!("Received Battery command 0x{:x}", cmd);
 
@@ -30,18 +42,5 @@ impl Battery {
         };
         rsp.struct_to_args64(&GenericRsp { _status: 0x0 });
         Ok(rsp)
-    }
-
-    // Handles messages sent to the EC Firmware management service
-    pub(crate) fn exec(self, msg: &FfaMsg) -> Result<FfaMsg> {
-        let id = FfaFunctionId::from(msg.function_id);
-
-        match id {
-            FfaFunctionId::FfaMsgSendDirectReq2 => self.ffa_msg_send_direct_req2(msg),
-            _ => {
-                println!("Unhandled FfaFunctionId in Battery: {:?}", id);
-                Err(FfaError::InvalidParameters)
-            }
-        }
     }
 }

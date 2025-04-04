@@ -1,8 +1,7 @@
+use crate::{Result, Service};
 use ffa::msg::FfaMsg;
 use ffa::{FfaError, FfaFunctionId};
-use uuid::Uuid;
-
-pub type Result<T> = core::result::Result<T, ffa::FfaError>;
+use uuid::{uuid, Uuid};
 
 // Protocol CMD definitions for Notification
 const NFY_QUERY: u8 = 0x0;
@@ -61,8 +60,20 @@ impl Notify {
     fn nfy_destroy(&self, _msg: &FfaMsg) -> NfyGenericRsp {
         NfyGenericRsp { _status: 0x0 }
     }
+}
 
-    fn ffa_msg_send_direct_req2(&self, msg: &FfaMsg) -> Result<FfaMsg> {
+const UUID: Uuid = uuid!("B510B3A3-59F6-4054-BA7A-FF2EB1EAC765");
+
+impl Service for Notify {
+    fn service_name(&self) -> &'static str {
+        "Notify"
+    }
+
+    fn service_uuid(&self) -> &'static Uuid {
+        &UUID
+    }
+
+    fn ffa_msg_send_direct_req2(&mut self, msg: &FfaMsg) -> Result<FfaMsg> {
         let cmd = msg.extract_u8_at_index(0);
         println!("Received notify command 0x{:x}", cmd);
 
@@ -90,19 +101,6 @@ impl Notify {
             }
             _ => {
                 println!("Unknown Notify Command: {}", cmd);
-                Err(FfaError::InvalidParameters)
-            }
-        }
-    }
-
-    // Handles messages sent to the EC Firmware management service
-    pub(crate) fn exec(self, msg: &FfaMsg) -> Result<FfaMsg> {
-        let id = FfaFunctionId::from(msg.function_id);
-
-        match id {
-            FfaFunctionId::FfaMsgSendDirectReq2 => self.ffa_msg_send_direct_req2(msg),
-            _ => {
-                println!("Unhandled FfaFunctionId in Notify: {:?}", id);
                 Err(FfaError::InvalidParameters)
             }
         }

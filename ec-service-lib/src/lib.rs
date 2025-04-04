@@ -4,27 +4,27 @@
 #[macro_use]
 extern crate ffa;
 
+mod service;
+pub mod services;
+
+use core::cell::RefCell;
 use ffa::msg::FfaMsg;
 use ffa::rxtx::FfaRxTxMsg;
 use ffa::{Ffa, FfaError};
-use uuid::{uuid, Uuid};
+pub use service::Service;
+use service::{Result, ServiceImpl};
+use uuid::uuid;
 
-mod battery;
-mod fw_mgmt;
-mod notify;
-mod thermal;
-
-pub type Result<T> = core::result::Result<T, ffa::FfaError>;
-
-const UUID_EC_SVC_NOTIFY: Uuid = uuid!("B510B3A3-59F6-4054-BA7A-FF2EB1EAC765");
-const UUID_EC_SVC_MANAGEMENT: Uuid = uuid!("330c1273-fde5-4757-9819-5b6539037502");
-const UUID_EC_SVC_POWER: Uuid = uuid!("7157addf-2fbe-4c63-ae95-efac16e3b01c");
-const UUID_EC_SVC_BATTERY: Uuid = uuid!("25cb5207-ac36-427d-aaef-3aa78877d27e");
-const UUID_EC_SVC_THERMAL: Uuid = uuid!("31f56da7-593c-4d72-a4b3-8fc7171ac073");
-const UUID_EC_SVC_UCSI: Uuid = uuid!("65467f50-827f-4e4f-8770-dbf4c3f77f45");
-const UUID_EC_SVC_TIME_ALARM: Uuid = uuid!("23ea63ed-b593-46ea-b027-8924df88e92f");
-const UUID_EC_SVC_DEBUG: Uuid = uuid!("0bd66c7c-a288-48a6-afc8-e2200c03eb62");
-const UUID_EC_SVC_OEM: Uuid = uuid!("9a8a1e88-a880-447c-830d-6d764e9172bb");
+// For reference, here are the UUIDs for services that ec-service-lib defines (not all of them are implemented)
+// const UUID_EC_SVC_NOTIFY: Uuid = uuid!("B510B3A3-59F6-4054-BA7A-FF2EB1EAC765");
+// const UUID_EC_SVC_MANAGEMENT: Uuid = uuid!("330c1273-fde5-4757-9819-5b6539037502");
+// const UUID_EC_SVC_POWER: Uuid = uuid!("7157addf-2fbe-4c63-ae95-efac16e3b01c");
+// const UUID_EC_SVC_BATTERY: Uuid = uuid!("25cb5207-ac36-427d-aaef-3aa78877d27e");
+// const UUID_EC_SVC_THERMAL: Uuid = uuid!("31f56da7-593c-4d72-a4b3-8fc7171ac073");
+// const UUID_EC_SVC_UCSI: Uuid = uuid!("65467f50-827f-4e4f-8770-dbf4c3f77f45");
+// const UUID_EC_SVC_TIME_ALARM: Uuid = uuid!("23ea63ed-b593-46ea-b027-8924df88e92f");
+// const UUID_EC_SVC_DEBUG: Uuid = uuid!("0bd66c7c-a288-48a6-afc8-e2200c03eb62");
+// const UUID_EC_SVC_OEM: Uuid = uuid!("9a8a1e88-a880-447c-830d-6d764e9172bb");
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum HafEcError {
@@ -33,13 +33,18 @@ pub enum HafEcError {
 }
 
 #[derive(Default)]
-pub struct HafEcService {
+pub struct HafEcService<'svc> {
     pub tx_buffer_base: u64,
     pub rx_buffer_base: u64,
     pub rxtx_page_count: u32,
+    pub services: &'svc [RefCell<&'svc mut dyn Service>],
 }
 
-impl HafEcService {
+impl HafEcService<'_> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn map_rxtx_buffers(&mut self, tx_base: u64, rx_base: u64, page_count: u32) -> HafEcError {
         // Map in shared RX/TX buffers
         println!(
@@ -77,33 +82,15 @@ impl HafEcService {
             msg.function_id, msg.uuid
         );
 
-        match msg.uuid {
-            UUID_EC_SVC_MANAGEMENT => {
-                let fwmgmt = fw_mgmt::FwMgmt::new();
-                fwmgmt.exec(msg)
-            }
-            UUID_EC_SVC_NOTIFY => {
-                let ntfy = notify::Notify::new();
-                ntfy.exec(msg)
-            }
-            UUID_EC_SVC_POWER => unimplemented!(),
-            UUID_EC_SVC_BATTERY => {
-                let bat = battery::Battery::new();
-                bat.exec(msg)
-            }
-            UUID_EC_SVC_THERMAL => {
-                let thm = thermal::ThmMgmt::new();
-                thm.exec(msg)
-            }
-            UUID_EC_SVC_UCSI => unimplemented!(),
-            UUID_EC_SVC_TIME_ALARM => unimplemented!(),
-            UUID_EC_SVC_DEBUG => unimplemented!(),
-            UUID_EC_SVC_OEM => unimplemented!(),
-            _ => {
-                println!("Unknown UUID {}", msg.uuid);
-                Err(FfaError::InvalidParameters)
+        for service in self.services {
+            let mut service = service.borrow_mut();
+            if service.service_uuid() == &msg.uuid {
+                return service.exec(msg);
             }
         }
+
+        println!("Unknown UUID {}", msg.uuid);
+        Err(FfaError::InvalidParameters)
     }
 
     pub fn sp_main(&self) -> ! {
