@@ -1,6 +1,6 @@
 {
     "rust-analyzer.check.allTargets": false,
-    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.cargo.features": "baremetal",
     "rust-analyzer.check.targets": [
         "aarch64-unknown-none"
     ],
