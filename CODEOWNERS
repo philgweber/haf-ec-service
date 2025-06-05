@@ -1,2 +1,5 @@
-# Add philgweber and dymk to all PR reviews
-* @philgweber @dymk
+* @OpenDevicePartnership/ec-code-owners @philgweber @dymk
+
+# Any changes in the supply-chain folder needs approval
+# from auditors as it relates to cargo vet
+**/supply-chain @OpenDevicePartnership/crate-auditors
