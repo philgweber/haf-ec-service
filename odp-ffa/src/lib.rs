@@ -39,7 +39,7 @@ fn exec_simple<T, Func: Function<ReturnType = T>>(
 
 fn handle_result_simple<T>(result: SmcCall, on_success: impl FnOnce(SmcCall) -> ExecResult<T>) -> ExecResult<T> {
     match result.id {
-        FunctionId::Success32 | FunctionId::Success64 => Ok(on_success(result)?),
+        FunctionId::Success32 | FunctionId::Success64 | FunctionId::MsgSendDirectReq2 => Ok(on_success(result)?),
         FunctionId::Error => Err(Error::ErrorCode(try_parse_error_code(result.params.x2)?)),
         _ => Err(Error::UnexpectedFunctionId(result.id)),
     }
