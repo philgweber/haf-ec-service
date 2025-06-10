@@ -1,0 +1,14 @@
+[package]
+name = "espi-device-stub"
+version = "0.1.0"
+edition = "2021"
+authors = ["Dylan Knutson <dylanknutson@microsoft.com>"]
+license = "MIT"
+description = "Stub implementation of the eSPI driver"
+
+[dependencies]
+espi-device.workspace = true
+log.workspace = true
+
+[lints]
+workspace = true

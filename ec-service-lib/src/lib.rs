@@ -5,12 +5,8 @@ mod service;
 pub mod services;
 pub mod sp_logger;
 
-use core::cell::RefCell;
-use ffa::msg::FfaMsg;
-use ffa::rxtx::FfaRxTxMsg;
-use ffa::{Ffa, FfaError};
 use log::{debug, error, info};
-use service::ServiceImpl;
+use odp_ffa::{Function, MsgSendDirectReq2, MsgSendDirectResp2, MsgWait, RxTxMap, TryFromSmcCall};
 pub use service::{Result, Service};
 
 // For reference, here are the UUIDs for services that ec-service-lib defines (not all of them are implemented)
@@ -31,19 +27,15 @@ pub enum HafEcError {
 }
 
 #[derive(Default)]
-pub struct HafEcService<'svc> {
-    tx_buffer_base: u64,
-    rx_buffer_base: u64,
-    rxtx_page_count: u32,
-    services: &'svc [RefCell<&'svc mut dyn Service>],
+pub struct HafEcService {
+    _tx_buffer_base: u64,
+    _rx_buffer_base: u64,
+    _rxtx_page_count: u32,
 }
 
-impl<'svc> HafEcService<'svc> {
-    pub fn new(services: &'svc [RefCell<&'svc mut dyn Service>]) -> Self {
-        Self {
-            services,
-            ..Default::default()
-        }
+impl HafEcService {
+    pub fn new() -> Self {
+        Self { ..Default::default() }
     }
 
     pub fn map_rxtx_buffers(&mut self, tx_base: u64, rx_base: u64, page_count: u32) -> HafEcError {
@@ -56,74 +48,43 @@ impl<'svc> HafEcService<'svc> {
             tx_base, rx_base, page_count
         );
 
-        let mut rxtx = FfaRxTxMsg::new();
-        let result = rxtx.map(tx_base, rx_base, page_count);
+        let result = RxTxMap::new(tx_base, rx_base, page_count).exec();
         match result {
-            FfaError::Ok => {
+            Ok(()) => {
                 debug!("Successfully mapped RXTX buffers");
-                self.tx_buffer_base = tx_base;
-                self.rx_buffer_base = rx_base;
-                self.rxtx_page_count = page_count;
+                HafEcError::Ok
             }
-
-            _ => {
+            Err(e) => {
                 // This is fatal, terminate SP
-                debug!("Error mapping RXTX buffers");
-                return HafEcError::InvalidParameters;
+                debug!("Error mapping RXTX buffers: {:?}", e);
+                HafEcError::InvalidParameters
             }
         }
-        HafEcError::Ok
     }
+}
 
-    fn ffa_msg_handler(&self, msg: &FfaMsg) -> Result<FfaMsg> {
-        debug!(
-            r#"Successfully received ffa msg:
-            function_id = {:08x}
-                   uuid = {}"#,
-            msg.function_id, msg.uuid
-        );
-
-        for service in self.services {
-            let mut service = service.borrow_mut();
-            if service.service_uuid() == &msg.uuid {
-                return service.exec(msg);
-            }
-        }
-
-        error!("Unknown UUID {}", msg.uuid);
-        Err(FfaError::InvalidParameters)
-    }
-
-    pub fn sp_main(self) -> ! {
-        info!("Entered sp_main");
-
-        // Get current FFA version
-        let ffa = Ffa::new();
-
-        // Call the msg_wait method
-        match ffa.version() {
-            Ok(ver) => info!("FFA Version: {}.{}", ver.major(), ver.minor()),
-            Err(_e) => {
-                // This is fatal, terminate SP
-                error!("FFA Version failed")
-            }
-        }
-
-        debug!("Entering FFA message loop");
-        // Call the msg_wait method
-        let mut next_msg = ffa.msg_wait();
-
-        loop {
-            match next_msg {
-                Ok(ref ffamsg) => match self.ffa_msg_handler(ffamsg) {
-                    Ok(msg) => next_msg = ffa.msg_resp(&msg),
-                    Err(e) => error!("Failed to handle FFA msg: {:?}", e),
-                },
+pub async fn async_msg_loop(
+    mut handler: impl AsyncFnMut(MsgSendDirectReq2) -> core::result::Result<MsgSendDirectResp2, odp_ffa::Error>,
+) -> core::result::Result<(), odp_ffa::Error> {
+    info!("async_msg_loop: start");
+    let mut msg = MsgWait::new().exec()?;
+    info!("async_msg_loop: msg: {:?}", msg);
+    loop {
+        msg = if let Ok(request) = MsgSendDirectReq2::try_from_smc_call(msg.clone()) {
+            info!("async_msg_loop: request: {:?}", request);
+            match handler(request).await {
+                Ok(response) => {
+                    info!("async_msg_loop: response: {:?}", response);
+                    response.exec()?
+                }
                 Err(e) => {
-                    error!("Error executing msg_wait: {:?}", e);
-                    next_msg = ffa.msg_wait();
+                    error!("Error handling FFA message: {:?}", e);
+                    MsgWait::new().exec()?
                 }
             }
+        } else {
+            error!("Unexpected FFA message: {:?}", msg);
+            MsgWait::new().exec()?
         }
     }
 }

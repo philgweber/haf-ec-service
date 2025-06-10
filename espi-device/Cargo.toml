@@ -1,0 +1,18 @@
+[package]
+name = "espi-device"
+version = "0.1.0"
+edition = "2021"
+description = "eSPI device driver interface"
+license = "MIT"
+authors = ["Dylan Knutson <dylanknutson@microsoft.com"]
+
+[dependencies]
+bitflags = "2.4.0"
+static_assertions = "1.1.0"
+num_enum.workspace = true
+num-traits.workspace = true
+subenum = { version = "1.1.2", default-features = false }
+bit-register.workspace = true
+
+[lints]
+workspace = true

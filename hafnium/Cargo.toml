@@ -1,0 +1,11 @@
+[package]
+name = "hafnium"
+version = "0.1.0"
+edition = "2021"
+description = "Hafnium platform code"
+license = "MIT"
+
+[dependencies]
+aarch64-cpu.workspace = true
+embassy-sync.workspace = true
+log.workspace = true

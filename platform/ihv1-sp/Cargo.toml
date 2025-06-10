@@ -10,18 +10,45 @@ keywords = ["arm", "aarch64", "cortex-a", "osdev"]
 categories = ["embedded", "no-std"]
 
 [features]
-default = []
-baremetal = ["aarch64-rt", "aarch64-paging", "aarch64-cpu"]
+default = ["std"]
+std = []
+baremetal = [
+    "aarch64-rt",
+    "aarch64-paging",
+    "aarch64-cpu",
+    "hafnium",
+    "embassy-aarch64-haf",
+]
+time-driver = ["baremetal", "embassy-time"]
 
 [target.'cfg(target_os = "none")'.dependencies]
-aarch64-rt.workspace = true
+aarch64-rt = { workspace = true, default-features = false, features = [
+    "el1",
+    "exceptions",
+] }
 aarch64-paging.workspace = true
 aarch64-cpu.workspace = true
+embassy-aarch64-haf.workspace = true
 
 [dependencies]
-ffa.workspace = true
-ec-service-lib.workspace = true
+odp-ffa.workspace = true
+ec-service-lib = { workspace = true }
+espi-device.workspace = true
 aarch64-rt = { workspace = true, optional = true }
 aarch64-paging = { workspace = true, optional = true }
 aarch64-cpu = { workspace = true, optional = true }
+uuid.workspace = true
 log.workspace = true
+embassy-executor.workspace = true
+embassy-sync.workspace = true
+static_cell = "2.1.0"
+espi-device-stub.workspace = true
+hafnium = { workspace = true, optional = true }
+embassy-aarch64-haf = { workspace = true, optional = true }
+embassy-time = { workspace = true, optional = true }
+
+[build-dependencies]
+chrono = "0.4"
+
+[lints]
+workspace = true

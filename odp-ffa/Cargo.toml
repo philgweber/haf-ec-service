@@ -1,0 +1,28 @@
+[package]
+name = "odp-ffa"
+authors = [
+    "Felipe Balbi <febalbi@microsoft.com>",
+    "Dylan Knutson <dylanknutson@microsoft.com>",
+]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Open Device Partnership's FFA bindings for Rust"
+repository = "https://github.com/OpenDevicePartnership/haf-ec-service"
+readme = "README.md"
+keywords = ["ffa", "odp"]
+categories = ["embedded", "no-std"]
+rust-version = "1.75"
+
+[package.metadata.docs.rs]
+targets = ["aarch64-unknown-none", "aarch64-unknown-none-softfloat"]
+
+[dependencies]
+uuid = { workspace = true, default-features = false, features = ["v1"] }
+log.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
+
+[lints]
+workspace = true
