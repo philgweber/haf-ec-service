@@ -9,7 +9,6 @@ const EC_CAP_INDIRECT_MSG: u8 = 0x0;
 const EC_CAP_GET_FW_STATE: u8 = 0x1;
 const EC_CAP_GET_SVC_LIST: u8 = 0x2;
 const EC_CAP_GET_BID: u8 = 0x3;
-#[cfg(debug_assertions)]
 const EC_CAP_TEST_NFY: u8 = 0x4;
 const EC_CAP_MAP_SHARE: u8 = 0x5;
 
@@ -129,7 +128,6 @@ impl FwMgmt {
         GenericRsp { _status: 0x0 }
     }
 
-    #[cfg(debug_assertions)]
     fn test_notify(&self, msg: MsgSendDirectReq2) -> GenericRsp {
         // let nfy = FfaNotify {
         //     function_id: FunctionId::NotificationSet.into(),
@@ -203,7 +201,6 @@ impl Service for FwMgmt {
             EC_CAP_GET_FW_STATE => RegisterPayload::from(self.get_fw_state()),
             EC_CAP_GET_SVC_LIST => RegisterPayload::from(self.get_svc_list()),
             EC_CAP_GET_BID => RegisterPayload::from(self.get_bid()),
-            #[cfg(debug_assertions)]
             EC_CAP_TEST_NFY => RegisterPayload::from(self.test_notify(msg.clone())),
             EC_CAP_MAP_SHARE => {
                 // First parameter is pointer to memory descriptor

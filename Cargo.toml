@@ -6,6 +6,7 @@ members = [
     "espi-device",
     "espi-device-stub",
     "platform/ihv1-sp",
+    "platform/qemu-sp",
 ]
 
 [workspace.package]

@@ -11,17 +11,26 @@ categories = ["embedded", "no-std"]
 
 [features]
 default = []
-baremetal = ["aarch64-rt", "aarch64-paging", "aarch64-cpu"]
 
 [target.'cfg(target_os = "none")'.dependencies]
 aarch64-rt.workspace = true
 aarch64-paging.workspace = true
 aarch64-cpu.workspace = true
+embassy-aarch64-haf.workspace = true
+hafnium.workspace = true
 
 [dependencies]
-ffa.workspace = true
+odp-ffa.workspace = true
 ec-service-lib.workspace = true
 aarch64-rt = { workspace = true, optional = true }
 aarch64-paging = { workspace = true, optional = true }
 aarch64-cpu = { workspace = true, optional = true }
+embassy-aarch64-haf = { workspace = true, optional = true }
+hafnium = { workspace = true, optional = true }
 log.workspace = true
+embassy-executor.workspace = true
+embassy-sync.workspace = true
+
+
+[build-dependencies]
+chrono = "0.4"

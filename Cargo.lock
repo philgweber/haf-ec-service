@@ -643,6 +643,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "qemu-ec-sp"
+version = "0.1.0"
+dependencies = [
+ "aarch64-cpu",
+ "aarch64-paging",
+ "aarch64-rt",
+ "chrono",
+ "ec-service-lib",
+ "embassy-aarch64-haf",
+ "embassy-executor",
+ "embassy-sync",
+ "hafnium",
+ "log",
+ "odp-ffa",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"

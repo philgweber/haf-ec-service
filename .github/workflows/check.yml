@@ -97,8 +97,8 @@ jobs:
       # intentionally no target specifier; see https://github.com/jonhoo/rust-ci-conf/pull/4
       # --feature-powerset runs for every combination of features
       - name: cargo hack (host platform target)
-        run: cargo hack check --feature-powerset --skip baremetal,time-driver
-      - name: cargo hack (baremetal platform target)
+        run: cargo hack check --feature-powerset --skip time-driver
+      - name: cargo hack (aarch64-unknown-none target)
         run: cargo hack check --feature-powerset --target=aarch64-unknown-none
   deny:
     # cargo-deny checks licenses, advisories, sources, and bans for
