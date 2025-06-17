@@ -12,14 +12,7 @@ categories = ["embedded", "no-std"]
 [features]
 default = ["std"]
 std = []
-baremetal = [
-    "aarch64-rt",
-    "aarch64-paging",
-    "aarch64-cpu",
-    "hafnium",
-    "embassy-aarch64-haf",
-]
-time-driver = ["baremetal", "embassy-time"]
+time-driver = ["embassy-time"]
 
 [target.'cfg(target_os = "none")'.dependencies]
 aarch64-rt = { workspace = true, default-features = false, features = [
@@ -28,6 +21,7 @@ aarch64-rt = { workspace = true, default-features = false, features = [
 ] }
 aarch64-paging.workspace = true
 aarch64-cpu.workspace = true
+hafnium.workspace = true
 embassy-aarch64-haf.workspace = true
 
 [dependencies]

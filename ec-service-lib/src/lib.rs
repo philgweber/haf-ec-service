@@ -7,7 +7,7 @@ pub mod sp_logger;
 
 use log::{debug, error, info};
 use odp_ffa::{Function, MsgSendDirectReq2, MsgSendDirectResp2, MsgWait, RxTxMap, TryFromSmcCall};
-pub use service::{Result, Service};
+pub use service::{Result, Service, ServiceNode, ServiceNodeHandler, ServiceNodeNone};
 
 // For reference, here are the UUIDs for services that ec-service-lib defines (not all of them are implemented)
 // const UUID_EC_SVC_NOTIFY: Uuid = uuid!("B510B3A3-59F6-4054-BA7A-FF2EB1EAC765");
@@ -63,7 +63,7 @@ impl HafEcService {
     }
 }
 
-pub async fn async_msg_loop(
+async fn async_msg_loop(
     mut handler: impl AsyncFnMut(MsgSendDirectReq2) -> core::result::Result<MsgSendDirectResp2, odp_ffa::Error>,
 ) -> core::result::Result<(), odp_ffa::Error> {
     info!("async_msg_loop: start");
