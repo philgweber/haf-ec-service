@@ -3,49 +3,13 @@ use log::{debug, error};
 use odp_ffa::{ErrorCode, MsgSendDirectReq2, MsgSendDirectResp2, Payload, RegisterPayload};
 use uuid::{uuid, Uuid};
 
-macro_rules! define_safe_enum {
-    (
-        $(#[$meta:meta])*
-        $vis:vis enum $name:ident: $type:ty {
-        $(
-            $variant:ident = $value:expr,
-        )*
-    }) => {
-        $(#[$meta])*
-        #[repr($type)]
-        $vis enum $name {
-            $(
-                $variant = $value,
-            )*
-        }
-
-        impl From<$name> for $type {
-            fn from(value: $name) -> Self {
-                value as $type
-            }
-        }
-
-        impl TryFrom<$type> for $name {
-            type Error = $type;
-
-            fn try_from(value: $type) -> core::result::Result<Self, $type> {
-                Ok(match value {
-                    $($value => $name::$variant,)*
-                    _ => return Err(value),
-                })
-            }
-        }
-    };
-}
-
-define_safe_enum! {
-    #[derive(Debug,Clone,Copy,PartialEq,Eq)]
-    enum MessageID: u8 {
-        Setup = 2,
-        Destroy = 3,
-        Assign = 4,
-        Unassign = 5,
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
+#[repr(u8)]
+enum MessageID {
+    Setup = 2,
+    Destroy = 3,
+    Assign = 4,
+    Unassign = 5,
 }
 
 #[derive(Default, Debug, Clone, Copy)]

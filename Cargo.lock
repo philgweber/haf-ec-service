@@ -192,6 +192,7 @@ version = "0.1.0"
 dependencies = [
  "aarch64-cpu",
  "log",
+ "num_enum",
  "odp-ffa",
  "uuid",
 ]
