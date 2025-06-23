@@ -27,8 +27,11 @@ pub struct ServiceNode<This: Service, Next: ServiceNodeHandler> {
 }
 
 impl<This: Service, Next: ServiceNodeHandler> ServiceNode<This, Next> {
-    pub async fn run_message_loop(&mut self) -> Result<()> {
-        async_msg_loop(async |msg| self.handle(msg).await).await
+    pub async fn run_message_loop(
+        &mut self,
+        before_handle_message: impl AsyncFnMut(&MsgSendDirectReq2) -> core::result::Result<(), odp_ffa::Error>,
+    ) -> Result<()> {
+        async_msg_loop(async |msg| self.handle(msg).await, before_handle_message).await
     }
 }
 
