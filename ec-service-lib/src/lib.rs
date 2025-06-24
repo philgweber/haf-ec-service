@@ -65,6 +65,7 @@ impl HafEcService {
 
 async fn async_msg_loop(
     mut handler: impl AsyncFnMut(MsgSendDirectReq2) -> core::result::Result<MsgSendDirectResp2, odp_ffa::Error>,
+    mut before_handle_message: impl AsyncFnMut(&MsgSendDirectReq2) -> core::result::Result<(), odp_ffa::Error>,
 ) -> core::result::Result<(), odp_ffa::Error> {
     info!("async_msg_loop: start");
     let mut msg = MsgWait::new().exec()?;
@@ -72,6 +73,7 @@ async fn async_msg_loop(
     loop {
         msg = if let Ok(request) = MsgSendDirectReq2::try_from_smc_call(msg.clone()) {
             info!("async_msg_loop: request: {:?}", request);
+            before_handle_message(&request).await?;
             match handler(request).await {
                 Ok(response) => {
                     info!("async_msg_loop: response: {:?}", response);

@@ -25,6 +25,15 @@ pub enum InterruptType {
     Fiq = 1,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(unused)]
+#[repr(u64)]
+pub enum InterruptReconfigureCommand {
+    TargetPe = 0,
+    SecState = 1,
+    Enable = 2,
+}
+
 /// Makes a hypervisor call with the specified arguments.
 ///
 /// # Arguments
@@ -94,6 +103,19 @@ pub fn hf_interrupt_get() -> Option<InterruptId> {
 pub fn hf_interrupt_deactivate(intid: InterruptId) -> Result<(), i64> {
     let intid = intid.0 as u64;
     let result = hf_call(HfCall::InterruptDeactivate, intid, intid, 0);
+    match result {
+        0 => Ok(()),
+        _ => Err(result),
+    }
+}
+
+pub fn hf_interrupt_reconfigure(
+    intid: InterruptId,
+    command: InterruptReconfigureCommand,
+    value: u64,
+) -> Result<(), i64> {
+    let intid = intid.0 as u64;
+    let result = hf_call(HfCall::InterruptReconfigure, intid, command as u64, value);
     match result {
         0 => Ok(()),
         _ => Err(result),

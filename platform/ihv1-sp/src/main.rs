@@ -21,7 +21,7 @@ async fn embassy_main(_spawner: embassy_executor::Spawner) {
 
     log::info!("IHV1 Secure Partition - build time: {}", env!("BUILD_TIME"));
     service_list![ec_service_lib::services::Thermal::new()]
-        .run_message_loop()
+        .run_message_loop(async |_| Ok(()))
         .await
         .expect("Error in run_message_loop");
 }

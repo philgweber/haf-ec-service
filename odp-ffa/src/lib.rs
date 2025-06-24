@@ -61,6 +61,7 @@ pub enum Error {
     UnexpectedFunctionId(FunctionId),
     InvalidErrorCode(i64),
     ErrorCode(ErrorCode),
+    HafniumError(i64),
     TooManySmcParams,
     Other(&'static str),
 }
