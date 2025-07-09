@@ -20,10 +20,12 @@ async fn embassy_main(_spawner: embassy_executor::Spawner) {
     use ec_service_lib::service_list;
 
     log::info!("QEMU Secure Partition - build time: {}", env!("BUILD_TIME"));
+
     service_list![
         ec_service_lib::services::Thermal::new(),
         ec_service_lib::services::FwMgmt::new(),
-        ec_service_lib::services::Notify::new()
+        ec_service_lib::services::Notify::new(),
+        baremetal::Battery::new()
     ]
     .run_message_loop(async |_| Ok(()))
     .await
