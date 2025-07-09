@@ -659,6 +659,7 @@ dependencies = [
  "hafnium",
  "log",
  "odp-ffa",
+ "uuid",
 ]
 
 [[package]]
