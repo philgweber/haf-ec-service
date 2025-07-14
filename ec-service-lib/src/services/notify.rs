@@ -133,11 +133,11 @@ impl MessageInfo {
 
 #[derive(Debug, Copy, Clone)]
 struct NfyMapping {
-    cookie: u32, // Cookie for the notification
-    id: u16,    // Global bitmask value
+    cookie: u32,       // Cookie for the notification
+    id: u16,           // Global bitmask value
     ntype: NotifyType, // Type of notification (Global or PerVcpu)
-    src_id: u16, // Source ID for the notification
-    in_use: bool, // Whether the notification mapping is currently in use
+    src_id: u16,       // Source ID for the notification
+    in_use: bool,      // Whether the notification mapping is currently in use
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -164,38 +164,41 @@ impl Notify {
             entries: [NfyEntry {
                 service_uuid: Uuid::nil(),
                 in_use: false,
-                mappings: [NfyMapping { cookie: 0, id: 0, ntype: NotifyType::Global, src_id: 0, in_use: false }; NOTIFY_MAX_MAPPINGS],
+                mappings: [NfyMapping {
+                    cookie: 0,
+                    id: 0,
+                    ntype: NotifyType::Global,
+                    src_id: 0,
+                    in_use: false,
+                }; NOTIFY_MAX_MAPPINGS],
             }; NOTIFY_MAX_SERVICES],
             global_bitmap: 0,
         }
     }
 
     fn nfy_find_entry(&self, uuid: Uuid) -> Option<usize> {
-        self.entries.iter().position(|entry| (entry.service_uuid == uuid && entry.in_use))
+        self.entries
+            .iter()
+            .position(|entry| (entry.service_uuid == uuid && entry.in_use))
     }
 
     fn nfy_find_empty_slot(&self) -> Option<usize> {
         self.entries.iter().position(|entry| !entry.in_use)
     }
 
-    fn nfy_find_matching_cookie(
-        &self,
-        entry_index: usize,
-        cookie: u32,
-    ) -> Option<usize> {
+    fn nfy_find_matching_cookie(&self, entry_index: usize, cookie: u32) -> Option<usize> {
         if entry_index >= NOTIFY_MAX_SERVICES {
             return None;
         }
 
         let entry = &self.entries[entry_index];
-        entry.mappings.iter().position(|mapping| mapping.in_use && mapping.cookie == cookie)
+        entry
+            .mappings
+            .iter()
+            .position(|mapping| mapping.in_use && mapping.cookie == cookie)
     }
 
-    fn nfy_register_mapping(
-        &mut self,
-        entry_index: usize,
-        req: NotifyReq,
-    ) -> ErrorCode {
+    fn nfy_register_mapping(&mut self, entry_index: usize, req: NotifyReq) -> ErrorCode {
         if entry_index >= NOTIFY_MAX_SERVICES {
             return ErrorCode::InvalidParameters;
         }
@@ -209,7 +212,7 @@ impl Notify {
         // We will iterate through the notifications, with a maximum of req.count
         for (cookie, id, ntype) in req.notifications.iter().take(req.count as usize) {
             let mut applied = false;
-            if let Some(_mapping_index) = self.nfy_find_matching_cookie (entry_index, *cookie) {
+            if let Some(_mapping_index) = self.nfy_find_matching_cookie(entry_index, *cookie) {
                 // If we found a matching cookie, this does not make sense, so we return an error
                 return ErrorCode::InvalidParameters;
             } else if temp_bitmask & (1 << id) != 0 {
@@ -253,11 +256,7 @@ impl Notify {
         ErrorCode::Ok
     }
 
-    fn nfy_unregister_mapping(
-        &mut self,
-        entry_index: usize,
-        req: NotifyReq,
-    ) -> ErrorCode {
+    fn nfy_unregister_mapping(&mut self, entry_index: usize, req: NotifyReq) -> ErrorCode {
         if entry_index >= NOTIFY_MAX_SERVICES {
             return ErrorCode::InvalidParameters;
         }
@@ -345,7 +344,13 @@ impl Notify {
             // If we found an empty slot, we can register the service
             self.entries[empty_slot].in_use = true;
             self.entries[empty_slot].service_uuid = req.receiver_uuid;
-            self.entries[empty_slot].mappings = [NfyMapping { cookie: 0, id: 0, ntype: NotifyType::Global, src_id: 0, in_use: false }; NOTIFY_MAX_MAPPINGS];
+            self.entries[empty_slot].mappings = [NfyMapping {
+                cookie: 0,
+                id: 0,
+                ntype: NotifyType::Global,
+                src_id: 0,
+                in_use: false,
+            }; NOTIFY_MAX_MAPPINGS];
             info!("Service registered, entry: {empty_slot}");
             entry = Some(empty_slot);
         } else {
@@ -361,10 +366,7 @@ impl Notify {
 
         if let Some(service_entry) = entry {
             // Now we can process the request
-            let res = self.nfy_register_mapping(
-                service_entry,
-                req
-            );
+            let res = self.nfy_register_mapping(service_entry, req);
 
             // Regardless of the result, we will return a response
             return NfySetupRsp {
@@ -401,10 +403,7 @@ impl Notify {
 
         let entry_index = entry.unwrap();
         // Now we can process the request
-        let res = self.nfy_unregister_mapping(
-            entry_index,
-            req
-        );
+        let res = self.nfy_unregister_mapping(entry_index, req);
 
         // Regardless of the result, we will return a response
         NfySetupRsp {
@@ -439,7 +438,8 @@ impl Service for Notify {
                 // For Assign and Unassign, we will just return a generic response
                 NfyGenericRsp {
                     status: ErrorCode::NotSupported as i64,
-                }.into()
+                }
+                .into()
             }
         };
 
