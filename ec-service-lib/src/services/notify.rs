@@ -1,5 +1,3 @@
-use core::error;
-
 use crate::{Result, Service};
 use log::{debug, error, info};
 use odp_ffa::{ErrorCode, MsgSendDirectReq2, MsgSendDirectResp2, Payload, RegisterPayload};
@@ -204,7 +202,7 @@ impl Notify {
 
         // Make a copy of the entries and global bitmap so that we will iterate
         // through the incoming request without mutating the original state.
-        let mut temp_entries = self.entries.clone();
+        let mut temp_entries = self.entries;
         let mut temp_bitmask = self.global_bitmap;
 
         // loop through the mappings in the req and register them
@@ -227,7 +225,7 @@ impl Notify {
                 let entry = &mut temp_entries[entry_index];
                 for mapping in &mut entry.mappings {
                     if !mapping.in_use {
-                        info!("Mapping: cookie: {}, id: {}, ntype: {:?}", cookie, id, ntype);
+                        info!("Mapping: cookie: {cookie}, id: {id}, ntype: {ntype:?}");
                         mapping.cookie = cookie;
                         mapping.id = id;
                         mapping.ntype = ntype;
@@ -240,7 +238,7 @@ impl Notify {
                 }
             }
             if !applied {
-                error!("Unable to apply mapping for cookie: {}, id: {}, ntype: {:?}", cookie, id, ntype);
+                error!("Unable to apply mapping for cookie: {cookie}, id: {id}, ntype: {ntype:?}");
                 // Something went wrong, we could not apply the mapping, just bail here
                 return ErrorCode::NoMemory;
             }
@@ -266,7 +264,7 @@ impl Notify {
 
         // Make a copy of the entries and global bitmap so that we will iterate
         // through the incoming request without mutating the original state.
-        let mut temp_entries = self.entries.clone();
+        let mut temp_entries = self.entries;
         let mut temp_bitmask = self.global_bitmap;
 
         // loop through the mappings in the req and register them
@@ -338,17 +336,17 @@ impl Notify {
         }
 
         // First check to see if the service is already registered
-        let mut entry = None;
+        let entry;
         if let Some(entry_index) = self.nfy_find_entry(req.receiver_uuid) {
             // If not registered, we will find an empty slot
-            info!("Service already registered, reusing entry: {}", entry_index);
+            info!("Service already registered, reusing entry: {entry_index}");
             entry = Some(entry_index);
         } else if let Some(empty_slot) = self.nfy_find_empty_slot() {
             // If we found an empty slot, we can register the service
             self.entries[empty_slot].in_use = true;
             self.entries[empty_slot].service_uuid = req.receiver_uuid;
             self.entries[empty_slot].mappings = [NfyMapping { cookie: 0, id: 0, ntype: NotifyType::Global, src_id: 0, in_use: false }; NOTIFY_MAX_MAPPINGS];
-            info!("Service registered, entry: {}", empty_slot);
+            info!("Service registered, entry: {empty_slot}");
             entry = Some(empty_slot);
         } else {
             // If no empty slot is found, we cannot register the service
@@ -389,7 +387,7 @@ impl Notify {
 
     fn nfy_destroy(&mut self, req: NotifyReq) -> NfySetupRsp {
         // First check to see if the service is already registered
-        let mut entry = self.nfy_find_entry(req.receiver_uuid);
+        let entry = self.nfy_find_entry(req.receiver_uuid);
         if entry.is_none() {
             // If no service entry is not found, we cannot unregister the service
             return NfySetupRsp {
@@ -409,13 +407,13 @@ impl Notify {
         );
 
         // Regardless of the result, we will return a response
-        return NfySetupRsp {
+        NfySetupRsp {
             reserved: 0,
             sender_uuid: req.sender_uuid,
             receiver_uuid: req.receiver_uuid,
             msg_info: MESSAGE_INFO_DIR_RESP + MessageID::Destroy as u64, // Response message for notification destroy
             status: res,
-        };
+        }
     }
 }
 
