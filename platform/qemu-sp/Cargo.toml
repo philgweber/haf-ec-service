@@ -30,6 +30,7 @@ hafnium = { workspace = true, optional = true }
 log.workspace = true
 embassy-executor.workspace = true
 embassy-sync.workspace = true
+uuid.workspace = true
 
 
 [build-dependencies]

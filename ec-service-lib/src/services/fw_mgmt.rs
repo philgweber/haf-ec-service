@@ -14,7 +14,6 @@ const EC_CAP_MAP_SHARE: u8 = 0x5;
 
 #[derive(Default)]
 struct FwStateRsp {
-    status: i64,
     fw_version: u16,
     secure_state: u8,
     boot_status: u8,
@@ -23,10 +22,9 @@ struct FwStateRsp {
 impl From<FwStateRsp> for RegisterPayload {
     fn from(rsp: FwStateRsp) -> Self {
         let iter = rsp
-            .status
+            .fw_version
             .to_le_bytes()
             .into_iter()
-            .chain(rsp.fw_version.to_le_bytes())
             .chain(rsp.secure_state.to_le_bytes())
             .chain(rsp.boot_status.to_le_bytes());
 
@@ -96,7 +94,6 @@ impl FwMgmt {
 
     fn get_fw_state(&self) -> FwStateRsp {
         FwStateRsp {
-            status: 0x0,
             fw_version: 0x0100,
             secure_state: 0x0,
             boot_status: 0x1,
