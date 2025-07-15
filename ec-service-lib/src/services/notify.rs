@@ -131,7 +131,7 @@ impl MessageInfo {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 struct NfyMapping {
     cookie: u32,       // Cookie for the notification
     id: u16,           // Global bitmask value
@@ -147,7 +147,17 @@ struct NfyEntry {
     mappings: [NfyMapping; NOTIFY_MAX_MAPPINGS], // This will hold the mappings for this service
 }
 
-#[derive(Debug, Copy, Clone)]
+impl Default for NfyEntry {
+    fn default() -> Self {
+        Self {
+            service_uuid: Uuid::nil(),
+            in_use: false,
+            mappings: [NfyMapping::default(); NOTIFY_MAX_MAPPINGS]
+        }
+    }
+}
+
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Notify {
     // We will carry the registered notifications in this struct.
     // which will be an array of NfyEntry with size of NOTIFY_MAX_SERVICES.
@@ -160,20 +170,7 @@ pub struct Notify {
 
 impl Notify {
     pub fn new() -> Self {
-        Notify {
-            entries: [NfyEntry {
-                service_uuid: Uuid::nil(),
-                in_use: false,
-                mappings: [NfyMapping {
-                    cookie: 0,
-                    id: 0,
-                    ntype: NotifyType::Global,
-                    src_id: 0,
-                    in_use: false,
-                }; NOTIFY_MAX_MAPPINGS],
-            }; NOTIFY_MAX_SERVICES],
-            global_bitmap: 0,
-        }
+        Self::default()
     }
 
     fn nfy_find_entry(&self, uuid: Uuid) -> Option<usize> {
@@ -344,13 +341,7 @@ impl Notify {
             // If we found an empty slot, we can register the service
             self.entries[empty_slot].in_use = true;
             self.entries[empty_slot].service_uuid = req.receiver_uuid;
-            self.entries[empty_slot].mappings = [NfyMapping {
-                cookie: 0,
-                id: 0,
-                ntype: NotifyType::Global,
-                src_id: 0,
-                in_use: false,
-            }; NOTIFY_MAX_MAPPINGS];
+            self.entries[empty_slot].mappings = [NfyMapping::default(); NOTIFY_MAX_MAPPINGS];
             info!("Service registered, entry: {empty_slot}");
             entry = Some(empty_slot);
         } else {
@@ -434,13 +425,13 @@ impl Service for Notify {
         let payload = match req.msg_info.message_id() {
             MessageID::Setup => RegisterPayload::from(self.nfy_setup(req)),
             MessageID::Destroy => RegisterPayload::from(self.nfy_destroy(req)),
-            _ => {
-                // For Assign and Unassign, we will just return a generic response
+            MessageID::Add | MessageID::Remove | MessageID::Assign | MessageID::Unassign => {
+                // For Add, Remove, Assign, and Unassign, we just return unsupported
                 NfyGenericRsp {
                     status: ErrorCode::NotSupported as i64,
                 }
                 .into()
-            }
+            },
         };
 
         Ok(MsgSendDirectResp2::from_req_with_payload(&msg, payload))
