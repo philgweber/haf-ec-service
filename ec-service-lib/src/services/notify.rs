@@ -152,7 +152,7 @@ impl Default for NfyEntry {
         Self {
             service_uuid: Uuid::nil(),
             in_use: false,
-            mappings: [NfyMapping::default(); NOTIFY_MAX_MAPPINGS]
+            mappings: [NfyMapping::default(); NOTIFY_MAX_MAPPINGS],
         }
     }
 }
@@ -431,7 +431,7 @@ impl Service for Notify {
                     status: ErrorCode::NotSupported as i64,
                 }
                 .into()
-            },
+            }
         };
 
         Ok(MsgSendDirectResp2::from_req_with_payload(&msg, payload))
