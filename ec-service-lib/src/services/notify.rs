@@ -197,6 +197,7 @@ impl Notify {
 
     fn nfy_register_mapping(&mut self, entry_index: usize, req: NotifyReq) -> ErrorCode {
         if entry_index >= NOTIFY_MAX_SERVICES {
+            error!("Invalid entry index: {entry_index}");
             return ErrorCode::InvalidParameters;
         }
 
@@ -211,9 +212,11 @@ impl Notify {
             let mut applied = false;
             if let Some(_mapping_index) = self.nfy_find_matching_cookie(entry_index, *cookie) {
                 // If we found a matching cookie, this does not make sense, so we return an error
+                error!("Found matching cookie for entry {entry_index}: {cookie}");
                 return ErrorCode::InvalidParameters;
             } else if temp_bitmask & (1 << id) != 0 {
                 // If the bit is already set, we cannot register this mapping
+                error!("Bitmask already set for entry {entry_index}: {id}");
                 return ErrorCode::InvalidParameters;
             } else {
                 // No matching cookie found, we can register this mapping
@@ -255,6 +258,7 @@ impl Notify {
 
     fn nfy_unregister_mapping(&mut self, entry_index: usize, req: NotifyReq) -> ErrorCode {
         if entry_index >= NOTIFY_MAX_SERVICES {
+            error!("Invalid entry index: {entry_index}");
             return ErrorCode::InvalidParameters;
         }
 
@@ -266,30 +270,34 @@ impl Notify {
         // loop through the mappings in the req and register them
         // We will iterate through the notifications, with a maximum of req.count
         for (cookie, id, ntype) in req.notifications.iter().take(req.count as usize) {
-            let mapping_index = self.nfy_find_matching_cookie(entry_index, *cookie);
+            let mapping_index = match self.nfy_find_matching_cookie(entry_index, *cookie) {
+                Some(index) => index,
+                None => {
+                    // If we could not find a matching cookie, this is an error request
+                    error!("No matching cookie found for entry {entry_index}: {cookie}");
+                    return ErrorCode::InvalidParameters;
+                }
+            };
 
-            if mapping_index.is_none() {
-                // If we could not find a matching cookie, this is an error request
-                return ErrorCode::InvalidParameters;
-            }
-
-            let mapping_index = mapping_index.unwrap();
             let t_id = temp_entries[entry_index].mappings[mapping_index].id;
             let t_ntype = temp_entries[entry_index].mappings[mapping_index].ntype;
             let t_src_id = temp_entries[entry_index].mappings[mapping_index].src_id;
 
             if t_id != *id {
                 // If the cookie does not match, this is an error request
+                error!("Cookie does not match for entry {entry_index}: {t_id} != {id}");
                 return ErrorCode::InvalidParameters;
             }
 
             if t_ntype != *ntype {
                 // If the type does not match, this is an error request
+                error!("Type does not match for entry {entry_index}: {t_ntype:?} != {ntype:?}");
                 return ErrorCode::InvalidParameters;
             }
 
             if t_src_id != req.src_id {
                 // If the source ID does not match, this is an error request
+                error!("Source ID does not match for entry {}: {} != {}", entry_index, t_src_id, req.src_id);
                 return ErrorCode::InvalidParameters;
             }
 
@@ -380,21 +388,28 @@ impl Notify {
 
     fn nfy_destroy(&mut self, req: NotifyReq) -> NfySetupRsp {
         // First check to see if the service is already registered
-        let entry = self.nfy_find_entry(req.receiver_uuid);
-        if entry.is_none() {
-            // If no service entry is not found, we cannot unregister the service
-            return NfySetupRsp {
-                reserved: 0,
-                sender_uuid: req.sender_uuid,
-                receiver_uuid: req.receiver_uuid,
-                msg_info: MESSAGE_INFO_DIR_RESP + MessageID::Destroy as u64, // Response message for notification destroy failure
-                status: ErrorCode::InvalidParameters,
-            };
-        }
+        let entry = match self.nfy_find_entry(req.receiver_uuid) {
+            Some(entry_index) => {
+                // If registered, we will use the entry index
+                info!("Service found, entry: {entry_index}");
+                entry_index
+            }
+            None => {
+                // If not registered, we cannot unregister the service
+                error!("Service not found for UUID: {:?}", req.receiver_uuid);
+                // If no service entry is not found, we cannot unregister the service
+                return NfySetupRsp {
+                    reserved: 0,
+                    sender_uuid: req.sender_uuid,
+                    receiver_uuid: req.receiver_uuid,
+                    msg_info: MESSAGE_INFO_DIR_RESP + MessageID::Destroy as u64, // Response message for notification destroy failure
+                    status: ErrorCode::InvalidParameters,
+                };
+            }
+        };
 
-        let entry_index = entry.unwrap();
         // Now we can process the request
-        let res = self.nfy_unregister_mapping(entry_index, req);
+        let res = self.nfy_unregister_mapping(entry, req);
 
         // Regardless of the result, we will return a response
         NfySetupRsp {
