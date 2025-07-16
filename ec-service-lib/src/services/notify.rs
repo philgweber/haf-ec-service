@@ -297,7 +297,10 @@ impl Notify {
 
             if t_src_id != req.src_id {
                 // If the source ID does not match, this is an error request
-                error!("Source ID does not match for entry {}: {} != {}", entry_index, t_src_id, req.src_id);
+                error!(
+                    "Source ID does not match for entry {}: {} != {}",
+                    entry_index, t_src_id, req.src_id
+                );
                 return ErrorCode::InvalidParameters;
             }
 
