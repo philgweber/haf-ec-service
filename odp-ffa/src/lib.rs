@@ -39,7 +39,7 @@ fn exec_simple<T, Func: Function<ReturnType = T>>(
 
 fn handle_result_simple<T>(result: SmcCall, on_success: impl FnOnce(SmcCall) -> ExecResult<T>) -> ExecResult<T> {
     match result.id {
-        FunctionId::Success32 | FunctionId::Success64 | FunctionId::MsgSendDirectReq2 => Ok(on_success(result)?),
+        FunctionId::Success32 | FunctionId::Success64 | FunctionId::MsgSendDirectReq2 | FunctionId::Interrupt => Ok(on_success(result)?),
         FunctionId::Error => Err(Error::ErrorCode(try_parse_error_code(result.params.x2)?)),
         _ => Err(Error::UnexpectedFunctionId(result.id)),
     }
@@ -142,6 +142,7 @@ pub enum FunctionId {
     MemReclaim = 0x84000077,
     MemFragRx = 0x8400007A,
     MemFragTx = 0x8400007B,
+    NormalWorldResume = 0x8400007C,
     NotificationBind = 0x8400007F,
     NotificationSet = 0x84000081,
     NotificationGet = 0x84000082,
@@ -150,6 +151,7 @@ pub enum FunctionId {
     ConsoleLog = 0xC400008A,
     MsgSendDirectReq2 = 0xC400008D,
     MsgSendDirectResp2 = 0xC400008E,
+    NotificationSet2 = 0xC4000096,
 }
 
 #[cfg(test)]

@@ -6,8 +6,9 @@ pub mod services;
 pub mod sp_logger;
 
 use log::{debug, error, info};
-use odp_ffa::{Function, MsgSendDirectReq2, MsgSendDirectResp2, MsgWait, RxTxMap, TryFromSmcCall};
+use odp_ffa::{Function, FunctionId, MsgSendDirectReq2, MsgSendDirectResp2, MsgWait, RegisterPayload, RxTxMap, TryFromSmcCall};
 pub use service::{Result, Service, ServiceNode, ServiceNodeHandler, ServiceNodeNone};
+use uuid::{uuid, Uuid};
 
 // For reference, here are the UUIDs for services that ec-service-lib defines (not all of them are implemented)
 // const UUID_EC_SVC_NOTIFY: Uuid = uuid!("B510B3A3-59F6-4054-BA7A-FF2EB1EAC765");
@@ -71,13 +72,38 @@ async fn async_msg_loop(
     let mut msg = MsgWait::new().exec()?;
     info!("async_msg_loop: msg: {:?}", msg);
     loop {
+        let mut sec_int = false;
+        if msg.id == FunctionId::Interrupt {
+          // Create new request to notify service for interrupt
+          info!("Received interrupt");
+          const NOTIFY_UUID: Uuid = uuid!("e474d87e-5731-4044-a727-cb3e8cf3c8df");
+          let (uuid_high, uuid_low) = NOTIFY_UUID.as_u64_pair();
+          msg.id = FunctionId::MsgSendDirectReq2;
+          msg.params.x1 = 0x8003 << 16; // Sender/receiver ID ignored
+          msg.params.x2 = uuid_high.to_be(); // High UUID bits for Notify service
+          msg.params.x3 = uuid_low.to_be();  // Low UUID bits for Notify service
+          msg.params.x4 = 0; // Source ID
+          msg.params.x5 = 0; // Sender UUID High
+          msg.params.x6 = 0; // Sender UUID Low
+          msg.params.x7 = 0; // Receiver UUID High
+          msg.params.x8 = 0; // Reciever UUID Low
+          msg.params.x9 = 6; // Message Id
+          msg.params.x10 = 0; // Count make sure it is zero
+          msg.params.x11 = 0; // Zero out first notification message
+          sec_int = true;
+        }
         msg = if let Ok(request) = MsgSendDirectReq2::try_from_smc_call(msg.clone()) {
             info!("async_msg_loop: request: {:?}", request);
             before_handle_message(&request).await?;
             match handler(request).await {
                 Ok(response) => {
-                    info!("async_msg_loop: response: {:?}", response);
-                    response.exec()?
+                    if sec_int {
+                      info!("normal_world_resume");
+                      MsgWait::new().exec()?
+                    } else {
+                      info!("async_msg_loop: response: {:?}", response);
+                      response.exec()?
+                    }
                 }
                 Err(e) => {
                     error!("Error handling FFA message: {:?}", e);
