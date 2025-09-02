@@ -19,6 +19,7 @@ impl Default for EspiDeviceStub {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[allow(unused)]
 struct StubConfigRegister(u32);
 
 impl ConfigRegister for StubConfigRegister {

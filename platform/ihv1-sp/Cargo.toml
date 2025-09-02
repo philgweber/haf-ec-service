@@ -35,7 +35,6 @@ uuid.workspace = true
 log.workspace = true
 embassy-executor.workspace = true
 embassy-sync.workspace = true
-static_cell = "2.1.0"
 espi-device-stub.workspace = true
 hafnium = { workspace = true, optional = true }
 embassy-aarch64-haf = { workspace = true, optional = true }
