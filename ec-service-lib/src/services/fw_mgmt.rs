@@ -1,8 +1,9 @@
 use crate::{Result, Service};
 use log::{debug, error};
-use odp_ffa::{Function, NotificationSet};
-use odp_ffa::{MemRetrieveReq, MsgSendDirectReq2, MsgSendDirectResp2, Payload, RegisterPayload};
+use odp_ffa::{Function, NotificationSet, RxTxMap};
+use odp_ffa::{FfaMemTransDesc, MemRetrieveReq, MsgSendDirectReq2, MsgSendDirectResp2, Payload, RegisterPayload};
 use uuid::{uuid, Uuid};
+use zerocopy::IntoBytes;
 
 // Protocol CMD definitions for FwMgmt
 const EC_CAP_INDIRECT_MSG: u8 = 0x0;
@@ -18,6 +19,7 @@ struct FwStateRsp {
     secure_state: u8,
     boot_status: u8,
 }
+
 
 impl From<FwStateRsp> for RegisterPayload {
     fn from(rsp: FwStateRsp) -> Self {
@@ -85,11 +87,21 @@ impl From<GenericRsp> for RegisterPayload {
 }
 
 #[derive(Default)]
-pub struct FwMgmt {}
+pub struct FwMgmt {
+    rxtx: RxTxMap,
+    shared_mem_handle: u64,
+    shared_mem_addr: u64,
+    shared_mem_size: u64,
+}
 
 impl FwMgmt {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(rxtx: RxTxMap) -> Self {
+        Self {
+            rxtx,
+            shared_mem_handle: 0,
+            shared_mem_addr: 0,
+            shared_mem_size: 0,
+        }
     }
 
     fn get_fw_state(&self) -> FwStateRsp {
@@ -119,9 +131,24 @@ impl FwMgmt {
         }
     }
 
-    fn map_share(&self, _address: u64, _length: u64) -> GenericRsp {
-        // TODO - do not hardcode address and length in MemRetrieveReq
-        MemRetrieveReq::new().exec().unwrap();
+    fn map_share(&mut self,  msg: MsgSendDirectReq2) -> GenericRsp {
+        // Extract shared memory info from registers
+        self.shared_mem_addr = msg.register_at(1);
+        self.shared_mem_size = msg.register_at(2);
+
+        let memdesc = FfaMemTransDesc::try_from(msg).expect("Failed to parse MemRetrieveReq");
+        self.shared_mem_handle = memdesc.handle;
+        
+        debug!("Shared memory request");
+        debug!("    Address: 0x{:x}", self.shared_mem_addr);
+        debug!("      Pages: 0x{:x}", self.shared_mem_size);
+        debug!("     Handle: 0x{:x}", self.shared_mem_handle);
+
+        // Write updated structure back to TX buffer
+        self.rxtx.set_tx_buffer(memdesc.as_bytes());
+        MemRetrieveReq::new().exec().expect("MemRetrieveReq failed");
+
+        // Unmap the RX/TX buffer again
         GenericRsp { _status: 0x0 }
     }
 
@@ -199,10 +226,7 @@ impl Service for FwMgmt {
             EC_CAP_GET_SVC_LIST => RegisterPayload::from(self.get_svc_list()),
             EC_CAP_GET_BID => RegisterPayload::from(self.get_bid()),
             EC_CAP_TEST_NFY => RegisterPayload::from(self.test_notify(msg.clone())),
-            EC_CAP_MAP_SHARE => {
-                // First parameter is pointer to memory descriptor
-                RegisterPayload::from(self.map_share(msg.register_at(1), msg.register_at(2)))
-            }
+            EC_CAP_MAP_SHARE => RegisterPayload::from(self.map_share(msg.clone())),
             _ => {
                 error!("Unknown FwMgmt Command: {}", cmd);
                 return Err(odp_ffa::Error::Other("Unknown FwMgmt Command"));

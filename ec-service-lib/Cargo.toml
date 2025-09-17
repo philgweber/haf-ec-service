@@ -17,6 +17,7 @@ uuid.workspace = true
 odp-ffa.workspace = true
 num_enum.workspace = true
 log.workspace = true
+zerocopy.workspace = true
 
 [target.'cfg(target_os = "none")'.dependencies]
 aarch64-cpu.workspace = true

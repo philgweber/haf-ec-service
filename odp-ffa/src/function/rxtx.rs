@@ -1,18 +1,30 @@
 use crate::{exec_simple, Error, ExecResult, Function, FunctionId, SmcParams};
+use core::ptr;
+
+#[repr(align(4096))]
+pub struct Aligned4K(pub [u8; 4096]);
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct RxTxMap {
-    tx_address: u64,
-    rx_address: u64,
+    tx_address: *mut u8,
+    rx_address: *mut u8,
     page_count: u32,
 }
 
 impl RxTxMap {
-    pub fn new(tx_address: u64, rx_address: u64, page_count: u32) -> Self {
+    pub fn new(tx_address: &mut Aligned4K, rx_address: &mut Aligned4K, page_count: u32) -> Self {
         Self {
-            tx_address,
-            rx_address,
+            tx_address : tx_address.0.as_ptr() as *mut u8,
+            rx_address : rx_address.0.as_ptr() as *mut u8,
             page_count,
+        }
+    }
+    pub fn set_tx_buffer(&self, src: &[u8]) {
+        assert!(src.len() <= 4096);
+        
+        // SAFETY: We're copying into a properly aligned and sized buffer.
+        unsafe {
+            ptr::copy_nonoverlapping(src.as_ptr(), self.tx_address, src.len());
         }
     }
 }
@@ -31,8 +43,8 @@ impl TryInto<SmcParams> for RxTxMap {
 
     fn try_into(self) -> Result<SmcParams, Self::Error> {
         Ok(SmcParams {
-            x1: self.tx_address,
-            x2: self.rx_address,
+            x1: self.tx_address as u64,
+            x2: self.rx_address as u64,
             x3: self.page_count as u64,
             ..Default::default()
         })
@@ -44,8 +56,8 @@ impl TryFrom<SmcParams> for RxTxMap {
 
     fn try_from(value: SmcParams) -> Result<Self, Self::Error> {
         Ok(RxTxMap {
-            tx_address: value.x1,
-            rx_address: value.x2,
+            tx_address: value.x1 as *mut u8,
+            rx_address: value.x2 as *mut u8,
             page_count: value.x3 as u32,
         })
     }

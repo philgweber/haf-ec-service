@@ -8,6 +8,7 @@
 
 #[cfg(target_os = "none")]
 mod baremetal;
+use odp_ffa::{Function,RxTxMap,Aligned4K};
 
 #[cfg(not(target_os = "none"))]
 fn main() {
@@ -21,9 +22,16 @@ async fn embassy_main(_spawner: embassy_executor::Spawner) {
 
     log::info!("QEMU Secure Partition - build time: {}", env!("BUILD_TIME"));
 
+    let tx_buffer = &mut Aligned4K([0u8; 4096]);
+    let rx_buffer  = &mut Aligned4K([0u8; 4096]);
+
+    // RxTx code owns these buffers now
+    let rxtx = RxTxMap::new(rx_buffer, tx_buffer, 1);
+    rxtx.clone().exec().expect("Failed to map RxTx buffers");
+
     service_list![
         ec_service_lib::services::Thermal::new(),
-        ec_service_lib::services::FwMgmt::new(),
+        ec_service_lib::services::FwMgmt::new(rxtx),
         ec_service_lib::services::Notify::new(),
         baremetal::Battery::new()
     ]

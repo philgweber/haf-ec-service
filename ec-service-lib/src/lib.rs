@@ -5,8 +5,8 @@ mod service;
 pub mod services;
 pub mod sp_logger;
 
-use log::{debug, error, info};
-use odp_ffa::{Function, FunctionId, MsgSendDirectReq2, MsgSendDirectResp2, MsgWait, RegisterPayload, RxTxMap, TryFromSmcCall};
+use log::{error, info};
+use odp_ffa::{Function, FunctionId, MsgSendDirectReq2, MsgSendDirectResp2, MsgWait, TryFromSmcCall};
 pub use service::{Result, Service, ServiceNode, ServiceNodeHandler, ServiceNodeNone};
 use uuid::{uuid, Uuid};
 
@@ -25,43 +25,6 @@ use uuid::{uuid, Uuid};
 pub enum HafEcError {
     Ok,
     InvalidParameters,
-}
-
-#[derive(Default)]
-pub struct HafEcService {
-    _tx_buffer_base: u64,
-    _rx_buffer_base: u64,
-    _rxtx_page_count: u32,
-}
-
-impl HafEcService {
-    pub fn new() -> Self {
-        Self { ..Default::default() }
-    }
-
-    pub fn map_rxtx_buffers(&mut self, tx_base: u64, rx_base: u64, page_count: u32) -> HafEcError {
-        // Map in shared RX/TX buffers
-        debug!(
-            "Mapping shared RX/TX buffers:
-               TX_BUFFER_BASE: 0x{:x}
-               RX_BUFFER_BASE: 0x{:x}
-               RXTX_PAGE_COUNT: 0x{:x}",
-            tx_base, rx_base, page_count
-        );
-
-        let result = RxTxMap::new(tx_base, rx_base, page_count).exec();
-        match result {
-            Ok(()) => {
-                debug!("Successfully mapped RXTX buffers");
-                HafEcError::Ok
-            }
-            Err(e) => {
-                // This is fatal, terminate SP
-                debug!("Error mapping RXTX buffers: {:?}", e);
-                HafEcError::InvalidParameters
-            }
-        }
-    }
 }
 
 async fn async_msg_loop(

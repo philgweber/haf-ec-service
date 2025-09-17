@@ -12,6 +12,7 @@ mod util;
 
 pub use function::*;
 use smc::*;
+use log::debug;
 
 /// Convert an SmcCall into a Function
 /// Blanket implementation for all functions
@@ -39,8 +40,11 @@ fn exec_simple<T, Func: Function<ReturnType = T>>(
 
 fn handle_result_simple<T>(result: SmcCall, on_success: impl FnOnce(SmcCall) -> ExecResult<T>) -> ExecResult<T> {
     match result.id {
-        FunctionId::Success32 | FunctionId::Success64 | FunctionId::MsgSendDirectReq2 | FunctionId::Interrupt => Ok(on_success(result)?),
-        FunctionId::Error => Err(Error::ErrorCode(try_parse_error_code(result.params.x2)?)),
+        FunctionId::Success32 | FunctionId::Success64 | FunctionId::MsgSendDirectReq2 | FunctionId::Interrupt | FunctionId::MemRetrieveResp => Ok(on_success(result)?),
+        FunctionId::Error => {
+            debug!("Function returned error: {:#?}", result);
+            Err(Error::ErrorCode(try_parse_error_code(result.params.x2)?))
+        }
         _ => Err(Error::UnexpectedFunctionId(result.id)),
     }
 }

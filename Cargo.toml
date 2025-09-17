@@ -45,6 +45,7 @@ num-traits = { version = "0.2.19", default-features = false }
 subenum = { version = "1.1.2", default-features = false }
 uuid = { version = "1.0", default-features = false, features = ["v1"] }
 rstest = "0.25.0"
+zerocopy = { version = "0.8", features = ["derive"], default-features = false }
 
 [workspace.lints.clippy]
 suspicious = "forbid"
