@@ -76,6 +76,18 @@
 			pages-count = <0x800>;
 			attributes = <0xB>;
 		};
+       };
+       device-regions {
+               compatible = "arm,ffa-manifest-device-regions";
+
+               /* Access to eSPI
+               */
+               espi_device {
+                       description = "espi-device";
+                       base-address = <0x0 0x70000000>;
+                       pages-count = <0x1>;
+                       attributes = <0x3>;
+               };
 
 	};
 
