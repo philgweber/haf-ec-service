@@ -10,29 +10,31 @@
 mod baremetal;
 use core::ptr;
 
-static mut DN_TXHDR_0: *mut u32 = 0x7000_0000 as *mut u32;
-static mut DN_TXHDR_1: *mut u32 = 0x7000_0004 as *mut u32;
-static mut DN_TXHDR_2: *mut u32 = 0x7000_0008 as *mut u32;
-static mut DN_TXDATA_PORT: *mut u32 = 0x7000_000C as *mut u32;
-static mut UP_RXHDR_0: *mut u32 = 0x7000_0010 as *mut u32;
-static mut UP_RXHDR_1: *mut u32 = 0x7000_0014 as *mut u32;
-static mut UP_RXDATA_PORT: *mut u32 = 0x7000_0018 as *mut u32;
-static mut MISC_CONTROL_REG: *mut u32 = 0x7000_0020 as *mut u32;
-static mut MASTER_CAP: *mut u32 = 0x7000_002C as *mut u32;
-static mut GLOBAL_CONTROL_0: *mut u32 = 0x7000_0030 as *mut u32;
-static mut GLOBAL_CONTROL_1: *mut u32 = 0x7000_0034 as *mut u32;
-static mut SLAVE0_DECODE_EN: *mut u32 = 0x7000_0040 as *mut u32;
-static mut SLAVE0_CONFIG: *mut u32 = 0x7000_0068 as *mut u32;
-static mut SLAVE0_INT_EN: *mut u32 = 0x7000_006C as *mut u32;
-static mut SLAVE0_INT_STS: *mut u32 = 0x7000_0070 as *mut u32;
-static mut SLAVE0_RXMSG_HDR0: *mut u32 = 0x7000_0074 as *mut u32;
-static mut SLAVE0_RXMSG_HDR1: *mut u32 = 0x7000_0078 as *mut u32;
-static mut SLAVE0_RXMSG_DATA_PORT: *mut u32 = 0x7000_007C as *mut u32;
-static mut SLAVE0_RXVW: *mut u32 = 0x7000_009C as *mut u32;
-static mut SLAVE0_RXVW_DATA: *mut u32 = 0x7000_00A0 as *mut u32;
-static mut SLAVE0_RXVW_INDEX: *mut u32 = 0x7000_00A4 as *mut u32;
-static mut SLAVE0_RXVW_MISC_CNTL: *mut u32 = 0x7000_00A8 as *mut u32;
-static mut ESPI_TRAN_CONTROL: *mut u32 = 0x7000_0124 as *mut u32;
+const MMIO_BASE: usize = 0xBC10_0000;
+
+static mut DN_TXHDR_0: *mut u32 = (MMIO_BASE + 0x0000) as *mut u32;
+static mut DN_TXHDR_1: *mut u32 = (MMIO_BASE + 0x0004) as *mut u32;
+static mut DN_TXHDR_2: *mut u32 = (MMIO_BASE + 0x0008) as *mut u32;
+static mut DN_TXDATA_PORT: *mut u32 = (MMIO_BASE + 0x000C) as *mut u32;
+static mut UP_RXHDR_0: *mut u32 = (MMIO_BASE + 0x0010) as *mut u32;
+static mut UP_RXHDR_1: *mut u32 = (MMIO_BASE + 0x0014) as *mut u32;
+static mut UP_RXDATA_PORT: *mut u32 = (MMIO_BASE + 0x0018) as *mut u32;
+static mut MISC_CONTROL_REG: *mut u32 = (MMIO_BASE + 0x0020) as *mut u32;
+static mut MASTER_CAP: *mut u32 = (MMIO_BASE + 0x002C) as *mut u32;
+static mut GLOBAL_CONTROL_0: *mut u32 = (MMIO_BASE + 0x0030) as *mut u32;
+static mut GLOBAL_CONTROL_1: *mut u32 = (MMIO_BASE + 0x0034) as *mut u32;
+static mut SLAVE0_DECODE_EN: *mut u32 = (MMIO_BASE + 0x0040) as *mut u32;
+static mut SLAVE0_CONFIG: *mut u32 = (MMIO_BASE + 0x0068) as *mut u32;
+static mut SLAVE0_INT_EN: *mut u32 = (MMIO_BASE + 0x006C) as *mut u32;
+static mut SLAVE0_INT_STS: *mut u32 = (MMIO_BASE + 0x0070) as *mut u32;
+static mut SLAVE0_RXMSG_HDR0: *mut u32 = (MMIO_BASE + 0x0074) as *mut u32;
+static mut SLAVE0_RXMSG_HDR1: *mut u32 = (MMIO_BASE + 0x0078) as *mut u32;
+static mut SLAVE0_RXMSG_DATA_PORT: *mut u32 = (MMIO_BASE + 0x007C) as *mut u32;
+static mut SLAVE0_RXVW: *mut u32 = (MMIO_BASE + 0x009C) as *mut u32;
+static mut SLAVE0_RXVW_DATA: *mut u32 = (MMIO_BASE + 0x00A0) as *mut u32;
+static mut SLAVE0_RXVW_INDEX: *mut u32 = (MMIO_BASE + 0x00A4) as *mut u32;
+static mut SLAVE0_RXVW_MISC_CNTL: *mut u32 = (MMIO_BASE + 0x00A8) as *mut u32;
+static mut ESPI_TRAN_CONTROL: *mut u32 = (MMIO_BASE + 0x0124) as *mut u32;
 
 // Define masks
 static CMD_STATUS_MASK: u32 = 1<<3;
@@ -108,10 +110,8 @@ fn put_oob(target: u8, mctp_code: u8, mctp_bytes: u8, data: &[u8]) {
 
         for chunk in data.chunks_exact(4) {
             let word = u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
-            unsafe {
-                log::info!("Writing value: {:08X}",word);
-                ptr::write_volatile(DN_TXDATA_PORT,word); // Next 4 bytes of data
-            }
+            log::info!("Writing value: {:08X}",word);
+            ptr::write_volatile(DN_TXDATA_PORT,word); // Next 4 bytes of data
         }
 
         log::info!("Send the OOB command");
@@ -372,18 +372,9 @@ async fn embassy_main(_spawner: embassy_executor::Spawner) {
             let rsp = get_oob();
 
 
+        // Wait here forever
         loop {
 
         }
     }
-
-    service_list![
-        ec_service_lib::services::Thermal::new(),
-        ec_service_lib::services::FwMgmt::new(),
-        ec_service_lib::services::Notify::new(),
-        baremetal::Battery::new()
-    ]
-    .run_message_loop(async |_| Ok(()))
-    .await
-    .expect("Error in run_message_loop");
 }

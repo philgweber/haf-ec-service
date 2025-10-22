@@ -7,17 +7,6 @@
 /dts-v1/;
 
 / {
-#define MODE_SEL0	(0x1)
-#define MODE_SEL1	(0x2)
-
-#define SECURE_RO 0x1
-#define SECURE_RW 0x3
-#define SECURE_EXECUTE_RO 0x5
-#define SECURE_EXECUTE_RW 0x7
-#define NON_SECURE_RO 0x9
-#define NON_SECURE_RW 0xB
-#define NON_SECURE_EXECUTE_RO 0xD
-#define NONSECURE_EXECUTE_RW 0xF
 	/*
 	 * EC Service partition handles the following UUID'S
 	 * INTER-PARTITION      e474d87e-5731-4044-a727-cb3e8cf3c8df
@@ -31,18 +20,14 @@
 
 	description = "EC Services";
 	ffa-version = <0x00010002>; /* 31:16 - Major, 15:0 - Minor */
-	uuid = <0x7ed874e4 0x44403157 0x3ecb27a7 0xdfc8f38c>,
-		   <0x73120c33 0x5747e5fd 0x655b1998 0x02750339>,
-		   <0xdfad5771 0x634cbe2f 0xacef95ae 0x1cb0e316>,
-                   <0x0752cb25 0x7d4236ac 0xa73aefaa 0x7ed27788>,
-		   <0xa76df531 0x724d3c59 0xc78fb3a4 0x73c01a17>;
+	uuid = <0x7ed874e4 0x44403157 0x3ecb27a7 0xdfc8f38c>;
 	id = <0x8002>;
 	execution-ctx-count = <1>;
 	exception-level = <2>; /* SEL1*/
 	execution-state = <0>; /* AArch64*/
-	load-address = <0x0 0x20400000>;
-	entrypoint-offset = <0x10000>;
-	image-size = <0x0 0x50000>;
+	load-address = <0x0 0x7F162000>;
+	entrypoint-offset = <0x2000>;
+	image-size = <0x0 0x20000>;
 	xlat-granule = <0>; /* 4KiB */
 	boot-order = <2>;
 	messaging-method = <0x603>; /* Direct request/response req2/rsp2 supported. */
@@ -58,37 +43,26 @@
 	memory-regions {
 		compatible = "arm,ffa-manifest-memory-regions";
 
-		// Heap used by RUST code in SP
-		heap {
-			description = "heap";
-			base-address = <0x0 0x20500000>;
-			pages-count = <0x100>; /* 1MB of Heap space */
-			attributes = <0x3>;
-		};
-		
-		/*
-		 * Memory shared between Normal world and S-EL0.
-		 * Similar to ARM_SP_IMAGE_NS_BUF_MMAP.
-		 */
-		ns_comm_buffer {
-			description = "ns-comm";
-			base-address = <0x00000100 0x60000000>;
-			pages-count = <0x800>;
-			attributes = <0xB>;
-		};
+      	  // Heap used by RUST code in SP
+	  heap {
+	  	description = "heap";
+		base-address = <0x0 0x7F192000>;
+		pages-count = <0x20>; /* 128KB of Heap space */
+		attributes = <0x3>;
+	  };
        };
+
        device-regions {
-               compatible = "arm,ffa-manifest-device-regions";
+         compatible = "arm,ffa-manifest-device-regions";
 
-               /* Access to eSPI
-               */
-               espi_device {
-                       description = "espi-device";
-                       base-address = <0x0 0x70000000>;
-                       pages-count = <0x1>;
-                       attributes = <0x3>;
-               };
+         // Access to eSPI
+         espi_device {
+           description = "espi-device";
+           base-address = <0x0 0xBC100000>;
+           pages-count = <0x1>;
+           attributes = <0x3>;
+         };
 
-	};
+       };
 
 };
