@@ -58,9 +58,9 @@
          // Access to eSPI
          espi_device {
            description = "espi-device";
-           base-address = <0x0 0xBC100000>;
+           base-address = <0x0 0xFEC20000>;
            pages-count = <0x1>;
-           attributes = <0x3>;
+           attributes = <0xb>;
          };
 
        };

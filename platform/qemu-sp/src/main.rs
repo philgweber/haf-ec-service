@@ -10,7 +10,7 @@
 mod baremetal;
 use core::ptr;
 
-const MMIO_BASE: usize = 0xBC10_0000;
+const MMIO_BASE: usize = 0xFEC2_0000;
 
 static mut DN_TXHDR_0: *mut u32 = (MMIO_BASE + 0x0000) as *mut u32;
 static mut DN_TXHDR_1: *mut u32 = (MMIO_BASE + 0x0004) as *mut u32;
@@ -277,20 +277,21 @@ async fn embassy_main(_spawner: embassy_executor::Spawner) {
     use ec_service_lib::service_list;
 
     log::info!("QEMU Secure Partition - build time: {}", env!("BUILD_TIME"));
+    log::info!("Base address: {:08X}",MMIO_BASE );
     
     unsafe {
         
-        init_espi_bus();
-        log::info!("Skipping bus init");
+        //log::info!("Calling init_espi_bus");
+        //init_espi_bus();
 
             // Clear all pending ineterrupts
-            clear_all_int();
-            ptr::write_volatile(SLAVE0_INT_EN,0);
-            ptr::write_volatile(SLAVE0_DECODE_EN,0x4); // Enable port 80/60-64
+            //clear_all_int();
+            //ptr::write_volatile(SLAVE0_INT_EN,0);
+            //ptr::write_volatile(SLAVE0_DECODE_EN,0x4); // Enable port 80/60-64
 
-            log::info!("Inband reset started");
-            send_inband_reset();
-            log::info!("Inband reset complete");
+            //log::info!("Inband reset started");
+            //send_inband_reset();
+            //log::info!("Inband reset complete");
             
             log::info!("ESPI_TRAN_CONTROL {:08X}", ptr::read_volatile(ESPI_TRAN_CONTROL));
             log::info!("DN_TXHDR_0 {:08X}", ptr::read_volatile(DN_TXHDR_0));
