@@ -1,0 +1,5 @@
+MEMORY
+{
+	image : ORIGIN = 0x7F081000, LENGTH = 256K
+  heap : ORIGIN = 0x7F940000, LENGTH = 256K
+}

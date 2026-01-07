@@ -1,0 +1,50 @@
+/*
+ * Copyright (c) 2020-21, ARM Limited and Contributors. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+
+/ {
+	/*
+	 * EC Service partition handles the following UUID'S
+	 * INTER-PARTITION      e474d87e-5731-4044-a727-cb3e8cf3c8df
+	 */
+
+	compatible = "arm,ffa-manifest-1.0";
+
+	description = "EC Services";
+	ffa-version = <0x00010002>; /* 31:16 - Major, 15:0 - Minor */
+	uuid = <0x7ed874e4 0x44403157 0x3ecb27a7 0xdfc8f38c>,
+	id = <0x8002>;
+	execution-ctx-count = <1>;
+	exception-level = <2>; /* SEL1*/
+	execution-state = <0>; /* AArch64*/
+	load-address = <0x0 0x7F081000>;
+	entrypoint-offset = <0x1000>;
+	image-size = <0x0 0x40000>; /* 256KB image space */
+	xlat-granule = <0>; /* 4KiB */
+	boot-order = <2>;
+	messaging-method = <0x603>; /* Direct request/response req2/rsp2 supported. */
+	ns-interrupts-action = <0>; /* Non-secure interrupt is signaled */
+	notification-support; /* Support receipt of notifications. */
+	gp-register-num = <0>;
+
+	boot-info {
+		compatible = "arm,ffa-manifest-boot-info";
+		ffa_manifest;
+	};
+
+	memory-regions {
+		compatible = "arm,ffa-manifest-memory-regions";
+
+		// Heap used by RUST code in SP
+		heap {
+			description = "heap";
+			base-address = <0x0 0x7F940000>;
+			pages-count = <0x40>; /* 256KB Heap space */
+			attributes = <0x3>;
+		};
+	};
+};

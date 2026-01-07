@@ -848,6 +848,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "tiete-ec-sp"
+version = "0.1.0"
+dependencies = [
+ "aarch64-cpu",
+ "aarch64-paging",
+ "aarch64-rt",
+ "chrono",
+ "ec-service-lib",
+ "embassy-aarch64-haf",
+ "embassy-executor",
+ "embassy-sync",
+ "embassy-time",
+ "espi-device",
+ "espi-device-stub",
+ "hafnium",
+ "log",
+ "odp-ffa",
+ "uuid",
+]
+
+[[package]]
 name = "tock-registers"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
